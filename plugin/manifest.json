@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "逐词高亮阅读器",
+  "version": "0.1.0",
+  "description": "网页文本逐词高亮放大播放,辅助英文阅读",
+  "permissions": ["storage", "activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content/extractor.js",
+        "content/tokenizer.js",
+        "content/player.js",
+        "content/index.js"
+      ],
+      "css": [
+        "content/ui.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "逐词高亮阅读器"
+  }
+}

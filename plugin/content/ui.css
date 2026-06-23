@@ -1,0 +1,139 @@
+#word-reader-overlay {
+  position: absolute;
+  z-index: 2147483646;
+  display: none;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+}
+
+#word-reader-overlay .wr-overlay-seg {
+  position: absolute;
+  background: rgba(255, 213, 79, 0.45);
+  border-radius: 3px;
+  box-shadow: inset 0 -2px 0 rgba(255, 167, 38, 0.85);
+  transition: opacity 0.12s ease;
+}
+
+#word-reader-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2147483647;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+#word-reader-fab:hover {
+  background: #1565c0;
+  transform: scale(1.06);
+}
+
+#word-reader-fab.wr-running {
+  background: #2e7d32;
+}
+
+#word-reader-toolbar {
+  position: fixed;
+  right: 24px;
+  bottom: 88px;
+  z-index: 2147483647;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 240px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+#word-reader-toolbar.wr-open {
+  display: flex;
+}
+
+#word-reader-toolbar .wr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#word-reader-toolbar .wr-row label {
+  flex: 0 0 56px;
+  color: #555;
+}
+
+#word-reader-toolbar .wr-row input[type="range"] {
+  flex: 1;
+}
+
+#word-reader-toolbar .wr-row .wr-val {
+  flex: 0 0 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+#word-reader-toolbar button {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f0f0f0;
+  color: #333;
+}
+
+#word-reader-toolbar button:hover {
+  background: #e0e0e0;
+}
+
+#word-reader-toolbar .wr-btn-primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+#word-reader-toolbar .wr-btn-primary:hover {
+  background: #1565c0;
+}
+
+#word-reader-toolbar .wr-btn-stop {
+  background: #d32f2f;
+  color: #fff;
+}
+
+#word-reader-toolbar .wr-btn-stop:hover {
+  background: #b71c1c;
+}
+
+#word-reader-toolbar .wr-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#word-reader-toolbar .wr-actions button {
+  flex: 1;
+}
+
+#word-reader-toolbar .wr-status {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}
