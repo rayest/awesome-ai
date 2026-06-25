@@ -37,7 +37,7 @@ description: "把文档（PDF / MD / TXT / DOCX）提炼为内容三件套：深
 |------|---------|--------|
 | 文档路径 | 用户必须提供 | 无 |
 | 范围 | 整篇文档 | 用户指定章节、页码、关键词 |
-| 输出目录 | `assets/abstract/` | 用户指定 |
+| 输出目录 | 深度解读 → `smarphin-knowledge-hub/docs/{category}/`；口播 + 配图 → `assets/abstract/` | 用户指定 |
 | 输出语言 | 与用户输入语言一致 | 用户指定 |
 | 是否配案例 | 是（默认开启） | 用户要求关闭 |
 | 三件套范围 | 默认全开 | 用户可指定"只要深度解读"等 |
@@ -86,7 +86,13 @@ for i in range(min(10, len(reader.pages))):
 
 按以下骨架生成（章节标题**不含原始资料的书名**，只用主题命名）：
 
+**重要**：深度解读 md 必须包含 **gray-matter frontmatter** 以便前端 `gray-matter` 解析：
+
 ```markdown
+---
+title: {章节标题}
+---
+
 # {主题一句话定位}
 
 ## 速查表（一页纸地图）
@@ -203,14 +209,29 @@ https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={URL编码}&image_
 
 ### 7. 落盘规范
 
-所有输出**统一存到 `assets/abstract/`**（或用户指定目录），命名**只含主题不含书名**：
+**三件套分两个目录落盘**，**深度解读单独定位**以支持前端渲染：
 
 ```
+smarphin-knowledge-hub/docs/
+└── {category}/                              # 资料分类（harness-engine / ai-product / ...）
+    └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
+
 assets/abstract/
-├── {主题}-深度解读.md
-├── {主题}-口播文案稿.md
-└── {主题}-配图提示词.md
+├── {主题}-深度解读.md                       # 备份 / 离线查阅
+├── {主题}-口播文案稿.md                     # 内容传播用
+└── {主题}-配图提示词.md                     # 内容传播用
 ```
+
+**关键约束**：
+
+1. **深度解读必须双写**：
+   - **主写**：`smarphin-knowledge-hub/docs/{category}/chapter-{N}-{slug}.md`（带 frontmatter `title: {章节标题}`）
+   - **备份写**：`assets/abstract/{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
+2. **`{category}`**：从原书 / 资料主题推断（如 Harness 工程 → `harness-engine`）；若用户指定，优先用户值
+3. **`{slug}`**：英文小写 + 连字符（如 `context-driver` / `prompt-to-context`）
+4. **口播 + 配图**：只写一份到 `assets/abstract/`，不进前端
+5. **生成前先 `mkdir -p`**，避免目录不存在报错
+6. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
 
 时间戳不需要（每个资料独立目录即可，资料本身就是唯一标识）。
 
@@ -218,10 +239,11 @@ assets/abstract/
 
 完成后向用户报告：
 
-- 所有输出文件的绝对路径（Code Reference 链接）
+- 所有输出文件的绝对路径（Code Reference 链接，**深度解读要列出 2 份**）
 - 每个文件的行数 / 大小
 - 内容结构概览
 - 建议下一步：先生成哪张配图做封面 / 优先发布哪个格式
+- **若深度解读主写成功**：提示用户可访问 `http://localhost:3000/docs/{category}/{slug}` 查看渲染效果
 
 ## Rules
 
@@ -233,6 +255,8 @@ assets/abstract/
 - **绝不**在生成内容里提到原始资料的书名 / 作者 / 出版社
 - **绝不**生成超过 15 张图（信息密度会下降）
 - **绝不**把生成物提交到 git——`assets/abstract/` 应在 `.gitignore`
+- **绝不**省略深度解读的 gray-matter frontmatter（前端 `gray-matter` 解析会失败）
+- **绝不**用中文 / 含空格的 category 或 slug（路由会失效）
 - 用户没说英文就**默认中文**
 - 图片 prompt 必须用**英文**写（生成模型对英文 prompt 更稳定）
 - 每个生成物单独一份 md，**不要打包成单个文件**（方便单独迭代）
@@ -279,10 +303,11 @@ assets/abstract/
 1. 用 pypdf 加载 PDF，扫描前 10 页定位第 2 章起止页
 2. 提取该章节文本块
 3. 生成三件套：
-   - `assets/abstract/{主题}-深度解读.md`
-   - `assets/abstract/{主题}-口播文案稿.md`
-   - `assets/abstract/{主题}-配图提示词.md`
-4. 返回 Code Reference 链接 + 行数 + 结构概览
+   - **深度解读主写** → `smarphin-knowledge-hub/docs/{category}/chapter-{N}-{slug}.md`（带 frontmatter）
+   - **深度解读备份** → `assets/abstract/{主题}-深度解读.md`
+   - **口播稿** → `assets/abstract/{主题}-口播文案稿.md`
+   - **配图提示词** → `assets/abstract/{主题}-配图提示词.md`
+4. 返回 Code Reference 链接（2 份深度解读都要列）+ 行数 + 结构概览 + 前端预览 URL
 
 **用户**：这个 PDF 第 5 章讲了什么？给我列个大纲就行
 
