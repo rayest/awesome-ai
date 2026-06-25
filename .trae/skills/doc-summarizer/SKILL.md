@@ -1,20 +1,27 @@
 ---
 name: "doc-summarizer"
-description: "Summarizes document core content (PDF, MD, TXT) and writes structured output as Markdown. Invoke when user asks to summarize/abstract/提炼 a document, or requests 总结并输出为文档."
+description: "Summarizes document core content (PDF, MD, TXT, DOCX) and writes structured Markdown. Invoke when user asks to summarize/abstract/提炼 a document, requests 总结并输出为文档, or specifies a chapter (e.g. 第 2 章)."
 ---
 
 # Doc Summarizer（文档摘要与输出）
 
-## 触发条件
+## Purpose
 
-当用户的请求符合以下任一情况时，自动调用本 Skill：
+把**原始文档**（PDF 书籍章节 / 长文章 / md / txt / docx）一次性提炼为**结构化 Markdown 摘要**，输出含主线、核心概念、案例对照、知识图谱、关键金句的速查文档。
 
-- 用户说"总结 / 摘要 / 提炼 / abstract"某个文档（PDF / MD / TXT / 代码文件）
-- 用户说"输出为文档 / 写入到文档 / 生成总结文档"
-- 用户指定了具体章节（如"第一章"、"第 3 章"、"chapter 2"）
-- 用户要求"附带案例 / 示例 / 类比"以方便理解
+适用场景：技术学习者、知识工作者、读书会、AI 课程内容准备。
 
-## 工作流程
+## Trigger
+
+用户说以下任意一句时立即触发：
+
+- "总结 / 摘要 / 提炼 / abstract 某个文档"
+- "输出为文档 / 写入到文档 / 生成总结文档"
+- 指定具体章节："第一章"、"第 3 章"、"chapter 2"
+- "附带案例 / 示例 / 类比"以方便理解
+- 提供 PDF/MD/TXT 文件 + "总结 / 提炼"
+
+## Workflow
 
 ### 1. 解析输入
 
@@ -41,7 +48,18 @@ description: "Summarizes document core content (PDF, MD, TXT) and writes structu
 | `.docx` | `python-docx` 库 |
 | 代码文件 | `Read` 工具 |
 
-读取后先**识别目录 / 大纲**，定位用户指定的章节，提取对应文本块（避免一次性把整本书塞入上下文）。
+**关键原则**：先**识别目录 / 大纲**，定位用户指定的章节，**只提取对应文本块**（避免一次性把整本书塞入上下文）。
+
+```python
+import pypdf
+reader = pypdf.PdfReader('file.pdf')
+# 先扫前 10 页找目录
+for i in range(min(10, len(reader.pages))):
+    text = reader.pages[i].extract_text()
+    if '第' in text and '章' in text:
+        # 定位章节边界
+        break
+```
 
 ### 3. 内容提炼原则
 
@@ -66,6 +84,7 @@ description: "Summarizes document core content (PDF, MD, TXT) and writes structu
 示例：
 - `第1章-从提示词到上下文工程.md`
 - `chapter-3-deep-research.md`
+- `第2章-上下文的元驱动.md`
 
 #### Markdown 结构模板
 
@@ -108,18 +127,47 @@ description: "Summarizes document core content (PDF, MD, TXT) and writes structu
 - 行数 / 大小
 - 内容结构概览
 
-## 反例（不要做的事）
+## Rules
 
-- 不要把整本 PDF 一次性加载到上下文再总结（容易 OOM 且不精准）
-- 不要输出"以上是我对第 N 章的总结"这类客套话
-- 不要省略案例除非用户明确说"不要案例"
-- 不要修改原文观点或添加未经验证的信息
-- 不要创建多余的文件（README、索引等）
+- **绝不**把整本 PDF 一次性加载到上下文再总结（容易 OOM 且不精准）
+- **绝不**大段照抄原文——总结 + 重组 + 类比才是价值
+- **绝不**省略案例除非用户明确说"不要案例"
+- **绝不**修改原文观点或添加未经验证的信息
+- **绝不**输出"以上是我对第 N 章的总结"这类客套话
+- **绝不**创建多余的文件（README、索引等）
+- **绝不**反复询问已能从上下文推断的信息（默认推进 + 标注假设）
+- 用户没说英文就**默认中文**
+- 每个核心概念**必须**配 1 个案例或生活类比
+- 关键术语**保留英文原文**避免翻译损失
+
+## Anti-patterns
+
+- ❌ 不要把"PDF 提取文本"和"内容提炼"混为一步——分两步清晰
+- ❌ 不要用 `cat` 读 PDF（Read 工具也读不了 binary），必须用 `pypdf`
+- ❌ 不要把类比堆成段——一个概念配**一个**最贴的类比即可
+- ❌ 不要在摘要里写"接下来我们看下一节"这种过渡——直接列要点
+- ❌ 不要给"用户友好建议"或"操作指引"——只做内容提炼
+- ❌ 不要给章节超过 3 层嵌套标题（信息密度下降）
+
+## Quick Reference（速查）
+
+| 输入类型 | 提取方式 | 备注 |
+|---------|---------|------|
+| PDF | `pypdf` | 按页提取，先扫目录定位章节 |
+| MD / TXT | `Read` 工具 | 直接读全文 |
+| DOCX | `python-docx` | 按需安装 |
+| 代码文件 | `Read` 工具 | 整文件直接读 |
+
+| 输出类型 | 字数参考 | 章节数 |
+|---------|---------|--------|
+| 章节摘要 md | 3000~6000 字 | 5~8 节主线 |
+| 单概念总结 | 300~800 字 | 1 概念 + 1 案例 |
+| 速查表 | 200~500 字 | 表格为主 |
 
 ## 依赖
 
 - Python 3.x
-- `pypdf`（PDF 读取，按需安装）
+- `pypdf`（PDF 读取，按需安装：`pip install --user --break-system-packages pypdf`）
 - `python-docx`（Word 读取，按需安装）
 
 ## 示例对话
@@ -127,11 +175,11 @@ description: "Summarizes document core content (PDF, MD, TXT) and writes structu
 **用户**：总结 `/path/to/book.pdf` 的第 2 章，并写入 `assets/abstract/`
 
 **本 Skill 自动执行**：
-1. 加载 PDF，定位第 2 章
-2. 提取文本块
-3. 按模板生成总结（带案例）
+1. 用 pypdf 加载 PDF，扫描前 10 页定位第 2 章起止页
+2. 提取该章节文本块
+3. 按模板生成总结（带案例 + 知识图谱 + 关键金句）
 4. 写入 `assets/abstract/第2章-xxx.md`
-5. 返回链接
+5. 返回 Code Reference 链接 + 行数 + 结构概览
 
 **用户**：这个 PDF 第 5 章讲了什么？给我列个大纲就行
 
