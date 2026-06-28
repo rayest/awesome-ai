@@ -515,28 +515,83 @@ https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={URL编码}&image_
 **三件套分两个目录落盘**，**深度解读单独定位**以支持前端渲染：
 
 ```
-smarphin-knowledge-hub/docs/
-└── {category}/                              # 资料分类（harness-engine / ai-product / ...）
-    └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
-
-assets/abstract/
-├── {主题}-深度解读.md                       # 备份 / 离线查阅
-├── {主题}-口播文案稿.md                     # 内容传播用
-└── {主题}-配图提示词.md                     # 内容传播用
+wenque-ai/
+├── smarphin-knowledge-hub/docs/
+│   └── {category}/                              # 资料分类（harness-engine / ai-product / ...）
+│       └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
+│
+└── assets/abstract/
+    └── {书名或文章标题}/                        # ⚠️ 第一层目录：书籍/文章名
+        ├── 第N章-{章节主题}-深度解读.md          # ⚠️ 必须含章节标识
+        ├── 第N章-{章节主题}-口播文案稿.md
+        └── 第N章-{章节主题}-配图提示词.md
 ```
+
+**命名规范（重要）**：
+
+| 层级 | 命名规则 | 示例 |
+|------|----------|------|
+| **第一层目录** | **必须**用书名 / 文章标题命名 | `Harness工程/` / `深入理解计算机系统/` / `硅谷来信/` |
+| **第二层文件** | **必须**含章节标识（`第N章` / `Chapter-N` / `Section-N`） | `第2章-上下文的元驱动-深度解读.md` |
+| **书籍类** | 章节用 `第N章-{主题}` 格式 | `第3章-DeepResearch-深度解读.md` |
+| **文章类** | 无章节用 `全文` 或日期标识 | `全文-AI行业分析-深度解读.md` |
+| **课程类** | 章节用 `Lesson-N` 格式 | `Lesson-5-提示词工程-深度解读.md` |
 
 **关键约束**：
 
 1. **深度解读必须双写**：
    - **主写**：`smarphin-knowledge-hub/docs/{category}/chapter-{N}-{slug}.md`（带 frontmatter `title: {章节标题}`）
-   - **备份写**：`assets/abstract/{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
+   - **备份写**：`assets/abstract/{书名}/第N章-{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
 2. **`{category}`**：从原书 / 资料主题推断（如 Harness 工程 → `harness-engine`）；若用户指定，优先用户值
 3. **`{slug}`**：英文小写 + 连字符（如 `context-driver` / `prompt-to-context`）
-4. **口播 + 配图**：只写一份到 `assets/abstract/`，不进前端
-5. **生成前先 `mkdir -p`**，避免目录不存在报错
-6. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
+4. **`{书名}`**：
+   - **从 PDF 文件名 / 文章标题提取**
+   - **去掉版本号、出版社、作者**等冗余信息
+   - **保留核心书名**（如 `Harness工程：从上下文管理到Agent系统构建.pdf` → `Harness工程/`）
+   - 目录名**不含空格、特殊字符**，可用 `_` 或连字符
+5. **口播 + 配图**：只写一份到 `assets/abstract/{书名}/`，不进前端
+6. **生成前先 `mkdir -p assets/abstract/{书名}`**，避免目录不存在报错
+7. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
 
 时间戳不需要（每个资料独立目录即可，资料本身就是唯一标识）。
+
+**目录结构示例**（Harness 工程 7 章已应用）：
+
+```
+wenque-ai/
+├── smarphin-knowledge-hub/docs/harness-engine/
+│   ├── chapter-1-prompt-to-context.md          # 第一章
+│   ├── chapter-2-context-driver.md             # 第二章
+│   ├── chapter-3-deep-research.md              # 第三章
+│   ├── chapter-4-memory-engineering.md         # 第四章
+│   ├── chapter-5-skills.md                     # 第五章
+│   ├── chapter-6-harness-practice.md           # 第六章
+│   └── chapter-7-claw-architecture.md          # 第七章
+│
+└── assets/abstract/
+    └── Harness工程/
+        ├── 第1章-从提示词到上下文工程-深度解读.md
+        ├── 第1章-从提示词到上下文工程-口播文案稿.md
+        ├── 第1章-从提示词到上下文工程-配图提示词.md
+        ├── 第2章-上下文的元驱动-深度解读.md
+        ├── 第2章-上下文的元驱动-口播文案稿.md
+        ├── 第2章-上下文的元驱动-配图提示词.md
+        ├── 第3章-DeepResearch-深度解读.md
+        ├── 第3章-DeepResearch-口播文案稿.md
+        ├── 第3章-DeepResearch-配图提示词.md
+        ├── 第4章-记忆工程-深度解读.md
+        ├── 第4章-记忆工程-口播文案稿.md
+        ├── 第4章-记忆工程-配图提示词.md
+        ├── 第5章-Skills上下文卸载-深度解读.md
+        ├── 第5章-Skills上下文卸载-口播文案稿.md
+        ├── 第5章-Skills上下文卸载-配图提示词.md
+        ├── 第6章-Harness实战-深度解读.md
+        ├── 第6章-Harness实战-口播文案稿.md
+        ├── 第6章-Harness实战-配图提示词.md
+        ├── 第7章-Claw架构-深度解读.md
+        ├── 第7章-Claw架构-口播文案稿.md
+        └── 第7章-Claw架构-配图提示词.md
+```
 
 ### 8. 输出确认
 
@@ -567,6 +622,9 @@ assets/abstract/
 - **绝不**用 ASCII 字符画流程图（阅读性极差，必须用 Mermaid）
 - **绝不**只描述原图不重绘（必须用 Mermaid 重绘 + 文字解读）
 - **绝不**改动原书图片中的中文文字（保留所有原始中文）
+- **绝不**把深度解读 / 口播稿直接平铺在 `assets/abstract/` 根目录（必须放在 `{书名}/` 子目录）
+- **绝不**省略文件名中的章节标识（必须含 `第N章` / `Chapter-N` / `Lesson-N` 等）
+- **绝不**在 `{书名}` 中带空格或特殊字符（用 `_` 或连字符）
 - 用户没说英文就**默认中文**
 - 图片 prompt 必须用**英文**写（生成模型对英文 prompt 更稳定）
 - 每个生成物单独一份 md，**不要打包成单个文件**（方便单独迭代）
@@ -591,6 +649,8 @@ assets/abstract/
 - ❌ 不要用 ASCII 字符画流程图（必须用 Mermaid）
 - ❌ 不要因为 Mermaid 复杂就放弃（复杂图也要画，宁可拆成子图也不能省略）
 - ❌ 不要用错误代码块语法（必须用 ` ```mermaid ` 而非 ` ```flow `）
+- ❌ 不要把生成物平铺在 `assets/abstract/` 根目录（必须建 `{书名}/` 子目录）
+- ❌ 不要省略章节标识（必须 `第N章-主题-类型.md` 格式）
 
 ## Quick Reference（速查）
 
