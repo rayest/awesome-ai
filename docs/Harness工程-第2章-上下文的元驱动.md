@@ -63,6 +63,92 @@
 - 像训练有素的护士，看一眼就知道挂哪个科
 - 提示词模板分两部分：TASK_INSTRUCTION（角色+输入结构）+ FORMAT_PROMPT（输出规则+兜底标签 `other`）
 
+**Ollama 部署命令**：
+
+```bash
+modelscope download --model katanemo/Arch-Router-1.5B.gguf --local_dir /root/model/arch
+pip install modelscope
+curl -fsSL https://ollama.com/install.sh | sh
+ollama create archrouter -f arch.mf
+ollama run archrouter:latest
+```
+
+**Ollama 模型配置**（`arch.mf`）：
+
+```yaml
+FROM /root/model/arch/Arch-Router-1.5B.gguf
+
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>{{ end }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+"""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+```
+
+**提示词模板（Part 1：TASK_INSTRUCTION）**：
+
+```python
+TASK_INSTRUCTION = """
+You are a helpful assistant designed to find the best suited route.
+You are provided with route description within <routes></routes> XML tags:
+<routes>
+{routes}
+</routes>
+<conversation>
+{conversation}
+</conversation>
+"""
+```
+
+**提示词模板（Part 2：FORMAT_PROMPT）**：
+
+```python
+FORMAT_PROMPT = """
+Your task is to decide which route is best suited for handling the user's
+latest input. Provide your answer in JSON format, wrapped in ```json ... ```.
+
+Schema:
+```json
+{{
+  "route": "string"
+}}
+```
+
+The route must be one of the routes provided in the <routes> tag.
+If no route is suited, answer with "other".
+"""
+```
+
+**LangChain 调用示例**：
+
+```python
+from langchain_community.llms import Ollama
+from langchain_core.prompts import ChatPromptTemplate
+import json
+
+llm = Ollama(model="archrouter:latest")
+
+routes = ["编程", "旅游", "财经", "其他"]
+routes_xml = "\n".join([f"<route>{r}</route>" for r in routes])
+
+conversation = """
+<message role="user">如何用 Go 编写 K8s Pod 查询？</message>
+"""
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", TASK_INSTRUCTION.format(routes=routes_xml)),
+    ("user", FORMAT_PROMPT + "\n\n" + conversation)
+])
+
+response = llm.invoke(prompt.format_prompt().to_string())
+result = json.loads(response.split("```json")[1].split("```")[0].strip())
+print(result)
+# {"route": "编程"}
+```
+
 #### 路径 B：小模型 + 大模型双保险（实战首选）
 
 | 模型 | 角色 | 比喻 |
@@ -127,6 +213,84 @@
 - `execute_node`：LLM + 工具调用能力，按大纲执行
 - `tool_node`：实际执行工具调用，回传 ToolMessage
 - 循环控制节点：判断 `Final Answer` 终止
+
+**完整代码实现**（LangGraph）：
+
+```python
+from typing import Annotated
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+llm_planner = ChatOpenAI(model="qwen-max", temperature=0)
+llm_executor = ChatOpenAI(model="qwen-turbo", temperature=0)
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+@tool
+def get_attraction(city: str) -> str:
+    """根据城市名查询热门景点。"""
+    return f"{city} 热门景点：牌坊街、广济桥、..."
+
+@tool
+def get_food(city: str) -> str:
+    """根据城市名查询必吃美食。"""
+    return f"{city} 必吃：牛肉火锅、肠粉、..."
+
+tools = [get_attraction, get_food]
+llm_executor_with_tools = llm_executor.bind_tools(tools)
+
+def plan_node(state: State):
+    plan_prompt = """
+    你是一位旅游攻略规划师。
+    可用资料目录：[{file_names}]
+    任务：基于以上资料目录，生成完整的攻略大纲（不超出资料范围）。
+    输出格式：每行一个章节标题，最后一行写"Final Answer"。
+    """
+    file_names = ["attractions.md", "foods.md", "transport.md"]
+    messages = [("user", plan_prompt.format(file_names=file_names))]
+    response = llm_planner.invoke(messages)
+    return {"messages": [response]}
+
+def execute_node(state: State):
+    return {"messages": [llm_executor_with_tools.invoke(state["messages"])]}
+
+def tool_node(state: State):
+    from langgraph.prebuilt import ToolNode
+    tool_node_instance = ToolNode(tools)
+    return tool_node_instance.invoke(state)
+
+def should_continue(state: State) -> str:
+    last_message = state["messages"][-1]
+    content = getattr(last_message, "content", "")
+    if "Final Answer" in content:
+        return "end"
+    if getattr(last_message, "tool_calls", None):
+        return "tools"
+    return "execute"
+
+graph = StateGraph(State)
+graph.add_node("plan", plan_node)
+graph.add_node("execute", execute_node)
+graph.add_node("tools", tool_node)
+
+graph.add_edge(START, "plan")
+graph.add_edge("plan", "execute")
+graph.add_conditional_edges("execute", should_continue, {
+    "tools": "tools", "execute": "execute", "end": END
+})
+graph.add_edge("tools", "execute")
+
+app = graph.compile()
+
+result = app.invoke({
+    "messages": [("user", "帮我写一份 3 天潮汕旅游攻略")]
+})
+print(result["messages"][-1].content)
+```
 
 **关键工程技巧**：
 
