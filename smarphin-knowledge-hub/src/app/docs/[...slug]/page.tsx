@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getDoc, getDocSlugs, getCategories, getDocsByCategory } from '@/lib/docs'
+import { getLearningNodeBySlug } from '@/lib/learning-map'
+import KnowledgeConsole from '@/components/KnowledgeConsole'
 
 interface PageProps {
   params: Promise<{ slug: string[] }>
@@ -27,6 +29,7 @@ export default async function DocPage({ params }: PageProps) {
 
   const categories = getCategories()
   const categoryDocs = getDocsByCategory(doc.category)
+  const learningNode = getLearningNodeBySlug(slug)
 
   return (
     <div className="layout">
@@ -62,30 +65,12 @@ export default async function DocPage({ params }: PageProps) {
           </>
         )}
       </aside>
-      <main className="main">
-        <div className="content-wrapper">
+      <main className="main doc-main">
+        <div className="content-wrapper doc-content-wrapper">
           <article className="markdown-content" dangerouslySetInnerHTML={{ __html: doc.content }} />
         </div>
       </main>
-      <ProgressBar />
+      <KnowledgeConsole node={learningNode} readingTime={doc.readingTime} />
     </div>
-  )
-}
-
-function ProgressBar() {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `
-          window.addEventListener('scroll', () => {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = (scrollTop / docHeight) * 100;
-            const fill = document.querySelector('.progress-fill');
-            if (fill) fill.style.width = progress + '%';
-          });
-        `,
-      }}
-    />
   )
 }

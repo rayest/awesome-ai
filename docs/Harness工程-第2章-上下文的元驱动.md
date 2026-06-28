@@ -183,6 +183,86 @@ print(result)
 | num_train_epochs | 3 | 5 |
 | lora_dim | 0 | 64 |
 
+**LoRA 微调脚本（swift 框架）**：
+
+```python
+from swift import LoRA, Trainer
+from swift.dataset import IntentDataset
+
+model_path = "Qwen2.5-1.5B-Instruct"
+dataset = IntentDataset.from_jsonl("intent_train.jsonl")
+
+lora_config = LoRA(
+    r=64,
+    lora_alpha=128,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM",
+)
+
+trainer = Trainer(
+    model=model_path,
+    args={
+        "learning_rate": 3e-4,
+        "global_batch_size": 256,
+        "num_train_epochs": 5,
+        "output_dir": "./output/intent-router",
+        "gradient_accumulation_steps": 8,
+        "warmup_ratio": 0.1,
+    },
+    train_dataset=dataset,
+    peft_config=lora_config,
+)
+
+trainer.train()
+trainer.save_model("./output/intent-router-lora")
+```
+
+**推理时合并主模型 + 大模型兜底**：
+
+```python
+from langchain_openai import ChatOpenAI
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+base_model = AutoModelForCausalLM.from_pretrained("Qwen2.5-1.5B-Instruct")
+lora_model = PeftModel.from_pretrained(base_model, "./output/intent-router-lora")
+tokenizer = AutoTokenizer.from_pretrained("Qwen2.5-1.5B-Instruct")
+
+def local_intent_router(user_query: str) -> str:
+    prompt = TASK_INSTRUCTION + FORMAT_PROMPT
+    inputs = tokenizer(prompt + user_query, return_tensors="pt")
+    outputs = lora_model.generate(**inputs, max_new_tokens=64)
+    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return parse_route(result)
+
+llm_fallback = ChatOpenAI(model="qwen3-max", temperature=0)
+
+def hybrid_intent_recognition(user_query: str, routes: list[str]) -> str:
+    local_result = local_intent_router(user_query)
+
+    fallback_prompt = f"""
+    你是意图识别专家。从以下类别中选择最匹配用户问题的标签：
+    类别：{routes}
+    用户问题：{user_query}
+    仅输出标签名，不要其他内容。
+    """
+    fallback_result = llm_fallback.invoke([("user", fallback_prompt)]).content.strip()
+
+    if local_result == fallback_result:
+        return local_result
+
+    return "__conflict__"
+
+def handle_conflict(user_query: str):
+    return {
+        "action": "clarify",
+        "message": "抱歉，我没理解清楚。能否换个说法？",
+        "raw_query": user_query,
+    }
+```
+
 **意图识别准确率 ≥ 98.5%** 才能满足企业级上线标准。
 
 > 💡 **真实价值**：每提升 1%，百万 DAU 系统每天少走错几十万次流程，节省大量算力与人工成本。
@@ -408,6 +488,98 @@ class Action(BaseModel):
 - 终止判定：反思输出包含"无建议/无须优化"或 stop_sign 关键词则结束
 - 安全关键词触发立即终止（如识别到 `rm -rf`）
 
+**反思模式完整实现**：
+
+```python
+from typing import Annotated
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_openai import ChatOpenAI
+
+llm_generator = ChatOpenAI(model="qwen-max", temperature=0)
+llm_reflector = ChatOpenAI(model="qwen-max", temperature=0)
+
+MAX_ITERATIONS = 3
+STOP_SIGNS = ["rm -rf", "dd if=/dev/zero", "mkfs"]
+
+class AgentState(TypedDict):
+    user_query: str
+    best_command: str
+    reflection: str
+    iterations: int
+    messages: Annotated[list, add_messages]
+
+def generate_node(state: AgentState):
+    prompt = f"""
+    用户需求：{state["user_query"]}
+    历史反思建议：{state.get("reflection", "无")}
+    请基于以上信息生成最佳的 shell / docker / 代码命令。
+    只输出命令本身，不要解释。
+    """
+    response = llm_generator.invoke([("user", prompt)])
+    return {
+        "best_command": response.content,
+        "messages": [response],
+        "iterations": state.get("iterations", 0) + 1,
+    }
+
+def reflect_node(state: AgentState):
+    prompt = f"""
+    待审查命令：{state["best_command"]}
+    原始需求：{state["user_query"]}
+
+    请从以下 4 维度审查：
+    1. 安全性：是否存在破坏性操作风险
+    2. 规范性：是否符合最佳实践
+    3. 效率性：是否存在更优解
+    4. 任务对齐：是否真正解决用户问题
+
+    输出格式：
+    - 若命令无须优化，输出"无建议"
+    - 若命令存在风险，输出"STOP: <风险描述>"
+    - 否则输出具体修改建议
+    """
+    response = llm_reflector.invoke([("user", prompt)])
+    return {"reflection": response.content, "messages": [response]}
+
+def check_reflection(state: AgentState) -> str:
+    reflection = state["reflection"]
+
+    for sign in STOP_SIGNS:
+        if sign in reflection:
+            return "stop"
+
+    if "无建议" in reflection or "无须优化" in reflection:
+        return "end"
+
+    if state["iterations"] >= MAX_ITERATIONS:
+        return "end"
+
+    return "regenerate"
+
+graph = StateGraph(AgentState)
+graph.add_node("generate", generate_node)
+graph.add_node("reflect", reflect_node)
+
+graph.add_edge(START, "generate")
+graph.add_edge("generate", "reflect")
+graph.add_conditional_edges("reflect", check_reflection, {
+    "regenerate": "generate", "end": END, "stop": END
+})
+
+app = graph.compile()
+
+result = app.invoke({
+    "user_query": "用 docker 创建 nginx 容器，端口映射 8080:80",
+    "best_command": "",
+    "reflection": "",
+    "iterations": 0,
+    "messages": [],
+})
+print("Final command:", result["best_command"])
+```
+
 ---
 
 ## 2.4 CodeAct 模式：让 AI 像万能工匠一样现场造工具
@@ -452,6 +624,96 @@ LLM 把图片路径 + 趋势文字组合 → 返回给用户
 - 提示词要求结果存入 `result` 变量（标准化输出）
 - 通过字符串匹配提取 ```python ... ``` 块作为可执行代码
 - 工具调用：包装为 `{"tool": "execute_python", "tool_input": code}`
+
+**CodeAct 完整实现**（含沙箱执行）：
+
+```python
+import re
+import json
+from typing import Annotated
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+llm = ChatOpenAI(model="qwen-coder", temperature=0)
+
+@tool
+def execute_python(code: str) -> str:
+    """在受限沙箱中执行 Python 代码，将结果存入 result 变量。"""
+    local_vars = {}
+    try:
+        exec(code, {"__builtins__": __builtins__}, local_vars)
+        result = local_vars.get("result", "执行成功，无返回值")
+        return str(result)
+    except Exception as e:
+        return f"执行错误：{type(e).__name__}: {e}"
+
+def _create_agent_action(code: str):
+    return {
+        "tool": "execute_python",
+        "tool_input": code,
+    }
+
+def llm_call_node(state: dict):
+    prompt = """
+    你是数据分析助手。请用 Python 代码解决用户问题。
+    步骤：
+    1. 分析问题
+    2. 写出 Python 代码（必须用 ```python ... ``` 包裹）
+    3. 代码中必须将最终结果存入 result 变量
+    4. 只输出代码块，不要其他解释
+    """
+    messages = state["messages"] + [("user", prompt)]
+    response = llm.invoke(messages)
+    return {"messages": [response]}
+
+def process_node(state: dict):
+    last_message = state["messages"][-1]
+    content = getattr(last_message, "content", "")
+
+    match = re.search(r"```python\n(.*?)```", content, re.DOTALL)
+    if not match:
+        return {
+            "output": "未找到可执行代码",
+            "messages": [],
+        }
+
+    code = match.group(1).strip()
+    result = execute_python.invoke(code)
+    return {
+        "output": result,
+        "messages": [("user", f"执行结果：{result}")],
+    }
+
+def enter_process(state: dict) -> str:
+    if state.get("output"):
+        return "end"
+    return "llm"
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+    output: str
+
+graph = StateGraph(State)
+graph.add_node("llm", llm_call_node)
+graph.add_node("process", process_node)
+
+graph.add_edge(START, "llm")
+graph.add_edge("llm", "process")
+graph.add_conditional_edges("process", enter_process, {
+    "end": END, "llm": "llm"
+})
+
+app = graph.compile()
+
+result = app.invoke({
+    "messages": [("user", "用 [10.1, 9.8, 10.7, 10.5, 10.9, 10.3, 10.6] 画折线图，保存到 /tmp/line.png")],
+    "output": "",
+})
+print(result["output"])
+```
 
 ### 安全沙箱（不能忽略的"地雷"）
 

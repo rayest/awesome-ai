@@ -16,9 +16,13 @@
 # next.js
 /.next/
 /out/
+/.velite/
 
 # production
 /build
+
+# local verification artifacts
+/output/
 
 # misc
 .DS_Store

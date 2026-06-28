@@ -1,17 +1,19 @@
-import { defineConfig } from 'velite'
+import { defineCollection, defineConfig, s } from 'velite'
+
+const docs = defineCollection({
+  name: 'Doc',
+  pattern: '**/*.{md,mdx}',
+  schema: s.object({
+    title: s.string().optional(),
+    content: s.markdown(),
+  }),
+})
 
 export default defineConfig({
-  content: {
+  root: 'docs',
+  collections: {
     docs: {
-      pattern: 'docs/**/*.{md,mdx}',
-      getMetadata: (file) => {
-        const { name } = file
-        const parts = name.split('/')
-        return {
-          slug: parts.slice(1).join('/').replace(/\.mdx?$/, ''),
-          category: parts[1] || 'uncategorized',
-        }
-      },
+      ...docs,
     },
   },
 })
