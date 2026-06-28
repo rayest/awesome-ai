@@ -80,6 +80,7 @@ for i in range(min(10, len(reader.pages))):
 - **保留关键术语英文**：避免翻译损失（如 `ReAct`、`Code Agent`、`SubAgent`）
 - **不做评价、不做推断性结论**：仅复述与重组原文观点
 - **代码示例原则**（见下方"代码示例处理规范"）：原书含代码时，深度解读必须保留可运行代码段
+- **图表重绘原则**（见下方"原书图表 Mermaid 重绘规范"）：原书含架构图 / 时序图 / 流程图时，**必须**用 Mermaid 重新绘制
 
 ---
 
@@ -170,6 +171,262 @@ title: {章节标题}
 ❌ 改写核心逻辑：作者用 for 循环，我改成 while  # 失真
 ```
 
+**原书图表 Mermaid 重绘规范**（核心要求）：
+
+> 当原书含**架构图 / 时序图 / 流程图 / 状态机图 / 组件关系图**时，深度解读 **必须** 用 **Mermaid** 重新绘制，**不得**仅放 `![图 X-Y](path)` 引用，也**不要**用 ASCII 字符画流程图。
+
+**为什么必须用 Mermaid 而非 ASCII**：
+- ASCII 流程图**阅读性差**：用户在终端 / IDE 看到大量 `┌─┐│└┘` 字符会非常难受
+- ASCII 流程图**不可缩放**：放大缩小都模糊
+- ASCII 流程图**不可交互**：鼠标悬停 / 点击 / 缩放都不支持
+- **Mermaid 原生支持**：GitHub / GitLab / VS Code / Obsidian / Next.js（rehype-mermaid）全部原生渲染
+- **可复制 / 可编辑**：用户可一键复制 Mermaid 源码修改
+- **可缩放 / 可交互**：现代渲染器支持缩放、点击高亮
+
+**Mermaid 8 种图表类型速查**：
+
+| 原书图表 | Mermaid 类型 | 关键字 | 适用场景 |
+|----------|-------------|--------|----------|
+| **架构图** | `flowchart` / `graph` | TD / LR / TB | 组件关系、层次结构 |
+| **时序图** | `sequenceDiagram` | `participant`, `->>`, `-->>` | 角色交互、消息流 |
+| **状态机图** | `stateDiagram-v2` | `state`, `-->`, `note left` | 状态转换 |
+| **类图** | `classDiagram` | `class`, `<\|--`, `*--` | 实体 / 类 / 接口关系 |
+| **ER 图** | `erDiagram` | `\|\|--o{`, `PK`, `FK` | 数据库表关系 |
+| **甘特图** | `gantt` | `dateFormat`, `section` | 时间线 / 项目进度 |
+| **饼图** | `pie` | `title`, `:`, `value` | 占比 / 分布 |
+| **用户旅程** | `journey` | `section`, `Task` | 用户操作路径 |
+
+**Mermaid 图标准结构**：
+
+````markdown
+> **图 X-Y：{原图标题}**（原图 Mermaid 重绘）
+
+\`\`\`mermaid
+graph TD
+    A[用户] --> B[编排器]
+    B --> C{群组需要触发词?}
+    C -->|是| D[激活 Agent]
+    C -->|否| E[跳过]
+    D --> F[处理消息]
+    F --> G[返回结果]
+\`\`\`
+
+**关键解读**：
+- {点 1：架构层次}
+- {点 2：组件交互}
+- {点 3：数据流向}
+````
+
+**8 大 Mermaid 图表语法速览**：
+
+#### 1. flowchart（架构 / 流程 / 决策图）
+
+```mermaid
+graph TD
+    A[方形节点] --> B(圆角节点)
+    A --> C{菱形判断}
+    C -->|是| D[/平行四边形/]
+    C -->|否| E[[子流程]]
+    D --> F[(圆柱形数据库)]
+```
+
+**节点形状**：
+- `[文本]` 矩形
+- `(文本)` 圆角矩形
+- `{文本}` 菱形（判断）
+- `[(文本)]` 圆柱形（数据库）
+- `([文本])` 体育场形
+- `[[文本]]` 子流程
+- `[(文本)]` 圆柱
+- `>文本]` 不对称（flag 形）
+
+**方向**：
+- `TD` / `TB` 上到下
+- `LR` 左到右
+- `RL` 右到左
+- `BT` 下到上
+
+**连线**：
+- `--> 实线箭头`
+- `--- 实线无箭头`
+- `-.-> 虚线箭头`
+- `==> 粗线箭头`
+- `-->|标签|` 带文字的箭头
+- `~~~ 不可见链接`（用于布局）
+
+#### 2. sequenceDiagram（时序图）
+
+```mermaid
+sequenceDiagram
+    participant A as 用户
+    participant B as 编排器
+    participant C as Agent
+    A->>B: 发送消息
+    B->>C: 激活 Agent
+    C-->>B: 返回结果
+    B-->>A: 回复消息
+    Note over A,C: 消息流转说明
+```
+
+**关键元素**：
+- `participant 别名 as 显示名`：声明角色
+- `->>` 实线箭头（同步）
+- `-->> 虚线箭头（响应）`
+- `Note left/right/over`：注释
+- `loop / end`：循环
+- `alt / else / end`：条件分支
+
+#### 3. stateDiagram-v2（状态机）
+
+```mermaid
+stateDiagram-v2
+    [*] --> 待处理
+    待处理 --> 处理中: 激活 Agent
+    处理中 --> 空闲: 完成
+    处理中 --> 已关闭: 30 分钟超时
+    空闲 --> 处理中: 新消息
+    空闲 --> [*]
+    已关闭 --> [*]
+```
+
+#### 4. classDiagram（类图）
+
+```mermaid
+classDiagram
+    class Agent {
+        +String name
+        +run(task)
+        -validate(input)
+    }
+    class Skill {
+        +String name
+        +load()
+    }
+    Agent "1" --> "*" Skill: uses
+```
+
+#### 5. erDiagram（ER 图）
+
+```mermaid
+erDiagram
+    USER ||--o{ TASK : has
+    USER {
+        int id PK
+        string name
+    }
+    TASK {
+        int id PK
+        int user_id FK
+        string subject
+    }
+```
+
+**关系符号**：
+- `||--||` 一对一
+- `||--o{` 一对多
+- `}o--o{` 多对多
+
+#### 6. gantt（甘特图）
+
+```mermaid
+gantt
+    title 项目进度
+    dateFormat YYYY-MM-DD
+    section 阶段一
+    任务1 :a1, 2026-01-01, 7d
+    任务2 :after a1, 5d
+    section 阶段二
+    任务3 :2026-01-13, 10d
+```
+
+#### 7. pie（饼图）
+
+```mermaid
+pie title 时间分配
+    "开发" : 45
+    "测试" : 20
+    "文档" : 15
+    "会议" : 10
+    "其他" : 10
+```
+
+#### 8. journey（用户旅程）
+
+```mermaid
+journey
+    title 用户部署 NanoClaw
+    section 准备
+      安装依赖: 3: 用户
+      配置 .env: 2: 用户
+    section 部署
+      编译镜像: 4: 用户
+      启动服务: 5: 用户
+    section 测试
+      飞书对话: 5: 用户
+      定时任务: 4: 用户
+```
+
+**Mermaid 渲染兼容性**：
+
+| 渲染器 | 支持 | 备注 |
+|--------|------|------|
+| GitHub | ✅ 原生 | ` ```mermaid ` 代码块自动渲染 |
+| GitLab | ✅ 原生 | 同上 |
+| VS Code | ✅ 插件 | Markdown Preview Enhanced |
+| Obsidian | ✅ 原生 | 完整支持 |
+| Next.js + rehype-mermaid | ✅ 插件 | 推荐：`remark-gfm` + `rehype-mermaid` |
+| Typora | ✅ 原生 | 内置渲染 |
+| 终端 cat | ❌ 不渲染 | 看到 Mermaid 源码（**这一点反比 ASCII 强**） |
+
+**Next.js 项目集成方案**（`smarphin-knowledge-hub`）：
+
+```bash
+npm install remark-mermaid rehype-mermaid
+```
+
+```typescript
+// next.config.ts / mdx 配置
+import remarkMermaid from 'remark-mermaid'
+
+export default {
+  remarkPlugins: [remarkGfm, [remarkMermaid, { strategy: 'img-svg' }]],
+  rehypePlugins: [],
+}
+```
+
+**Mermaid 实战注意事项**：
+
+| 注意点 | 说明 |
+|--------|------|
+| **中文字符** | 直接写中文即可，**保留原书所有中文** |
+| **节点标识符** | 字母数字组合，**不要**含空格 / 特殊字符 |
+| **显示文本** | 用 `node["显示文本"]` 或 `node(显示文本)` |
+| **换行** | 节点文本用 `<br/>` 换行（如 `A["第一行<br/>第二行"]`） |
+| **注释** | 流程图用 `%% 注释`，时序图用 `Note` |
+| **主题** | 可加 `%%{init: {'theme':'dark'}}%%` 切换暗色主题 |
+| **复杂图** | 拆成多个子图，用 `subgraph` 分组 |
+| **样式定制** | `classDef 类名 fill:#f9f,stroke:#333` 自定义节点颜色 |
+
+**反例**：
+
+```markdown
+❌ 用 ASCII 字符画流程图：主进程 ─→ 容器 ─→ Agent
+    阅读性极差，且现代 IDE 渲染混乱
+❌ 只引用不重绘：![图 7-1 NanoClaw 架构](path/to/image.png)
+    前端找不到
+❌ 只描述不重绘：原图展示了 NanoClaw 的一内一外架构
+    用户看不到
+❌ 不用 mermaid 关键字：```flow 而不是 ```mermaid
+    部分渲染器不识别
+```
+
+**特殊场景**：
+
+1. **图片含数据表格** → 直接转成 markdown 表格（**必须**保留）
+2. **图片含代码截图** → 转写为可运行代码（按"代码示例处理规范"）
+3. **图片含 UI 截图** → 用 Mermaid flowchart 重绘主要布局 + 文字说明细节
+4. **图片含大量中文** → 直接写在 Mermaid 节点里，**100% 保留**
+
 ---
 
 ### 5. 生成口播文案稿 md（输出 2）
@@ -258,28 +515,83 @@ https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={URL编码}&image_
 **三件套分两个目录落盘**，**深度解读单独定位**以支持前端渲染：
 
 ```
-smarphin-knowledge-hub/docs/
-└── {category}/                              # 资料分类（harness-engine / ai-product / ...）
-    └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
-
-assets/abstract/
-├── {主题}-深度解读.md                       # 备份 / 离线查阅
-├── {主题}-口播文案稿.md                     # 内容传播用
-└── {主题}-配图提示词.md                     # 内容传播用
+wenque-ai/
+├── smarphin-knowledge-hub/docs/
+│   └── {category}/                              # 资料分类（harness-engine / ai-product / ...）
+│       └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
+│
+└── assets/abstract/
+    └── {书名或文章标题}/                        # ⚠️ 第一层目录：书籍/文章名
+        ├── 第N章-{章节主题}-深度解读.md          # ⚠️ 必须含章节标识
+        ├── 第N章-{章节主题}-口播文案稿.md
+        └── 第N章-{章节主题}-配图提示词.md
 ```
+
+**命名规范（重要）**：
+
+| 层级 | 命名规则 | 示例 |
+|------|----------|------|
+| **第一层目录** | **必须**用书名 / 文章标题命名 | `Harness工程/` / `深入理解计算机系统/` / `硅谷来信/` |
+| **第二层文件** | **必须**含章节标识（`第N章` / `Chapter-N` / `Section-N`） | `第2章-上下文的元驱动-深度解读.md` |
+| **书籍类** | 章节用 `第N章-{主题}` 格式 | `第3章-DeepResearch-深度解读.md` |
+| **文章类** | 无章节用 `全文` 或日期标识 | `全文-AI行业分析-深度解读.md` |
+| **课程类** | 章节用 `Lesson-N` 格式 | `Lesson-5-提示词工程-深度解读.md` |
 
 **关键约束**：
 
 1. **深度解读必须双写**：
    - **主写**：`smarphin-knowledge-hub/docs/{category}/chapter-{N}-{slug}.md`（带 frontmatter `title: {章节标题}`）
-   - **备份写**：`assets/abstract/{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
+   - **备份写**：`assets/abstract/{书名}/第N章-{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
 2. **`{category}`**：从原书 / 资料主题推断（如 Harness 工程 → `harness-engine`）；若用户指定，优先用户值
 3. **`{slug}`**：英文小写 + 连字符（如 `context-driver` / `prompt-to-context`）
-4. **口播 + 配图**：只写一份到 `assets/abstract/`，不进前端
-5. **生成前先 `mkdir -p`**，避免目录不存在报错
-6. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
+4. **`{书名}`**：
+   - **从 PDF 文件名 / 文章标题提取**
+   - **去掉版本号、出版社、作者**等冗余信息
+   - **保留核心书名**（如 `Harness工程：从上下文管理到Agent系统构建.pdf` → `Harness工程/`）
+   - 目录名**不含空格、特殊字符**，可用 `_` 或连字符
+5. **口播 + 配图**：只写一份到 `assets/abstract/{书名}/`，不进前端
+6. **生成前先 `mkdir -p assets/abstract/{书名}`**，避免目录不存在报错
+7. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
 
 时间戳不需要（每个资料独立目录即可，资料本身就是唯一标识）。
+
+**目录结构示例**（Harness 工程 7 章已应用）：
+
+```
+wenque-ai/
+├── smarphin-knowledge-hub/docs/harness-engine/
+│   ├── chapter-1-prompt-to-context.md          # 第一章
+│   ├── chapter-2-context-driver.md             # 第二章
+│   ├── chapter-3-deep-research.md              # 第三章
+│   ├── chapter-4-memory-engineering.md         # 第四章
+│   ├── chapter-5-skills.md                     # 第五章
+│   ├── chapter-6-harness-practice.md           # 第六章
+│   └── chapter-7-claw-architecture.md          # 第七章
+│
+└── assets/abstract/
+    └── Harness工程/
+        ├── 第1章-从提示词到上下文工程-深度解读.md
+        ├── 第1章-从提示词到上下文工程-口播文案稿.md
+        ├── 第1章-从提示词到上下文工程-配图提示词.md
+        ├── 第2章-上下文的元驱动-深度解读.md
+        ├── 第2章-上下文的元驱动-口播文案稿.md
+        ├── 第2章-上下文的元驱动-配图提示词.md
+        ├── 第3章-DeepResearch-深度解读.md
+        ├── 第3章-DeepResearch-口播文案稿.md
+        ├── 第3章-DeepResearch-配图提示词.md
+        ├── 第4章-记忆工程-深度解读.md
+        ├── 第4章-记忆工程-口播文案稿.md
+        ├── 第4章-记忆工程-配图提示词.md
+        ├── 第5章-Skills上下文卸载-深度解读.md
+        ├── 第5章-Skills上下文卸载-口播文案稿.md
+        ├── 第5章-Skills上下文卸载-配图提示词.md
+        ├── 第6章-Harness实战-深度解读.md
+        ├── 第6章-Harness实战-口播文案稿.md
+        ├── 第6章-Harness实战-配图提示词.md
+        ├── 第7章-Claw架构-深度解读.md
+        ├── 第7章-Claw架构-口播文案稿.md
+        └── 第7章-Claw架构-配图提示词.md
+```
 
 ### 8. 输出确认
 
@@ -306,6 +618,13 @@ assets/abstract/
 - **绝不**删掉原书的代码示例（保留并加注释说明，代码段允许豁免"不写注释"原则）
 - **绝不**把代码改写成失真版本（保留作者原始逻辑，仅做格式化）
 - **绝不**用图片 / 链接替代代码段（用户看不到代码就是失败的总结）
+- **绝不**用图片引用替代 Mermaid 图（原书 PDF 图片前端无法渲染，必须用 Mermaid 重绘）
+- **绝不**用 ASCII 字符画流程图（阅读性极差，必须用 Mermaid）
+- **绝不**只描述原图不重绘（必须用 Mermaid 重绘 + 文字解读）
+- **绝不**改动原书图片中的中文文字（保留所有原始中文）
+- **绝不**把深度解读 / 口播稿直接平铺在 `assets/abstract/` 根目录（必须放在 `{书名}/` 子目录）
+- **绝不**省略文件名中的章节标识（必须含 `第N章` / `Chapter-N` / `Lesson-N` 等）
+- **绝不**在 `{书名}` 中带空格或特殊字符（用 `_` 或连字符）
 - 用户没说英文就**默认中文**
 - 图片 prompt 必须用**英文**写（生成模型对英文 prompt 更稳定）
 - 每个生成物单独一份 md，**不要打包成单个文件**（方便单独迭代）
@@ -327,6 +646,11 @@ assets/abstract/
 - ❌ 不要把代码改写成伪代码（除非原书本身是伪代码）
 - ❌ 不要在口播稿里出现完整代码（改口述或要点）
 - ❌ 不要在配图提示词里堆砌整段代码（用作视觉锚点即可）
+- ❌ 不要用 ASCII 字符画流程图（必须用 Mermaid）
+- ❌ 不要因为 Mermaid 复杂就放弃（复杂图也要画，宁可拆成子图也不能省略）
+- ❌ 不要用错误代码块语法（必须用 ` ```mermaid ` 而非 ` ```flow `）
+- ❌ 不要把生成物平铺在 `assets/abstract/` 根目录（必须建 `{书名}/` 子目录）
+- ❌ 不要省略章节标识（必须 `第N章-主题-类型.md` 格式）
 
 ## Quick Reference（速查）
 
@@ -339,10 +663,11 @@ assets/abstract/
 
 | 输出类型 | 字数参考 | 章节数 |
 |---------|---------|--------|
-| 深度解读 md | 3000~6000 字 | 5~8 节（含 3~5 段代码） |
+| 深度解读 md | 3000~6000 字 | 5~8 节（含 3~5 段代码 + 3~5 张 Mermaid 图） |
 | 口播稿 md | 2000~2500 字 | 8~10 段 |
 | 配图提示词 md | 8~15 张图 | 每张 100~200 字英文 prompt |
 | 单段代码 | 30~50 行 | 完整可运行 + 关键注释 |
+| 单张 Mermaid 图 | 10~40 行 | 完整可读 + 关键解读 |
 | 口播稿代码 | 0 行 | 改口述或 1~3 句要点 |
 | 配图提示词代码 | 1~3 行 | 视觉锚点，不展开 |
 
