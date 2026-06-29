@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+  <defs>
+    <style>
+      .bg { fill: #efe5d0; }
+      .ink { fill: #102b46; }
+      .line { fill: none; stroke: #102b46; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { fill: none; stroke: #102b46; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .dash { fill: none; stroke: #102b46; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 8; }
+      .cream { fill: #f8f1df; }
+      .red { fill: #b9543f; }
+      .gold { fill: #c9a84e; }
+      .gray { fill: #d7d2c8; }
+      .navy { fill: #102b46; }
+      .paper { fill: #f8f1df; stroke: #102b46; stroke-width: 3; }
+      .card { fill: #f8f1df; stroke: #102b46; stroke-width: 3; rx: 18; }
+      .small-card { fill: #efe5d0; stroke: #102b46; stroke-width: 2.4; rx: 14; }
+      .title { font-family: "Songti SC", "Noto Serif CJK SC", serif; font-size: 54px; font-weight: 800; letter-spacing: 0; fill: #102b46; }
+      .subtitle { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 21px; font-weight: 500; fill: #102b46; }
+      .h2 { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 25px; font-weight: 800; fill: #102b46; }
+      .h3 { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 20px; font-weight: 800; fill: #102b46; }
+      .body { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 17px; font-weight: 520; fill: #102b46; }
+      .tiny { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 14px; font-weight: 500; fill: #102b46; }
+      .mono { font-family: "SF Mono", "Menlo", monospace; font-size: 15px; font-weight: 700; fill: #102b46; }
+      .label { font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; font-size: 13px; font-weight: 800; fill: #f8f1df; }
+      .light { fill: #f8f1df !important; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#102b46"/>
+    </marker>
+    <pattern id="dotgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#102b46" opacity="0.18"/>
+    </pattern>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="1600"/>
+  <rect x="32" y="32" width="1136" height="1536" fill="url(#dotgrid)" opacity="0.55"/>
+  <rect class="thin" x="32" y="32" width="1136" height="1536" rx="30"/>
+  <rect class="thin" x="50" y="50" width="1100" height="1500" rx="22"/>
+
+  <g transform="translate(76 70)">
+    <rect class="red" x="0" y="0" width="116" height="38" rx="19"/>
+    <text class="label" x="58" y="25" text-anchor="middle">HARNESS CH.2</text>
+    <text class="title" x="0" y="102">上下文的“元驱动”</text>
+    <text class="subtitle" x="4" y="142">把 Agent 的五种能力工程化：识别意图 → 规划计划 → 反思纠错 → 执行行动 → 人机协作</text>
+    <text class="mono" x="812" y="32">Agent = State Machine + LLM</text>
+  </g>
+
+  <g transform="translate(76 245)">
+    <rect class="card" x="0" y="0" width="1048" height="260" rx="22"/>
+    <rect class="navy" x="24" y="24" width="252" height="212" rx="18"/>
+    <text class="h2 light" x="150" y="66" text-anchor="middle">统一底座</text>
+    <text class="title light" x="150" y="130" text-anchor="middle" font-size="48">LangGraph</text>
+    <text class="body light" x="150" y="172" text-anchor="middle">读取状态 → 调用 LLM</text>
+    <text class="body light" x="150" y="202" text-anchor="middle">更新状态 → 条件边流转</text>
+
+    <g transform="translate(330 36)">
+      <rect class="small-card" x="0" y="0" width="150" height="74" rx="14"/>
+      <text class="h3" x="75" y="31" text-anchor="middle">State</text>
+      <text class="tiny" x="75" y="55" text-anchor="middle">上下文容器</text>
+      <rect class="small-card" x="214" y="0" width="150" height="74" rx="14"/>
+      <text class="h3" x="289" y="31" text-anchor="middle">Node</text>
+      <text class="tiny" x="289" y="55" text-anchor="middle">一次处理动作</text>
+      <rect class="small-card" x="428" y="0" width="150" height="74" rx="14"/>
+      <text class="h3" x="503" y="31" text-anchor="middle">Edge</text>
+      <text class="tiny" x="503" y="55" text-anchor="middle">流转与分支</text>
+      <path class="line" d="M150 37 H214" marker-end="url(#arrow)"/>
+      <path class="line" d="M364 37 H428" marker-end="url(#arrow)"/>
+
+      <rect class="gold" x="40" y="118" width="500" height="62" rx="31"/>
+      <text class="h3" x="290" y="145" text-anchor="middle">五大模式不是互斥模块，而是可叠加的节点与边</text>
+      <text class="tiny" x="290" y="169" text-anchor="middle">DeepResearch = Plan + Reflection + Search Tools / Claude Code = CodeAct + HITL + Reflection</text>
+    </g>
+  </g>
+
+  <g transform="translate(76 545)">
+    <rect class="card" x="0" y="0" width="504" height="338" rx="22"/>
+    <circle class="gold" cx="58" cy="58" r="34"/>
+    <path class="line" d="M45 58 h26 M58 45 v26"/>
+    <text class="h2" x="108" y="48">2.1 意图识别</text>
+    <text class="body" x="108" y="78">入口分诊：把自由输入路由到正确能力</text>
+    <text class="body" x="28" y="122">工程路径 A：Arch-Router 1.5B</text>
+    <text class="tiny" x="44" y="151">Ollama + GGUF；routes + conversation → {"route":"编程"}</text>
+    <text class="body" x="28" y="190">工程路径 B：小模型 + 大模型双保险</text>
+    <text class="tiny" x="44" y="219">一致：信任小模型；冲突：拒绝 / 转人工 / 追问 / 记日志</text>
+    <rect class="red" x="28" y="252" width="166" height="52" rx="14"/>
+    <text class="label" x="111" y="274" text-anchor="middle">上线阈值</text>
+    <text class="label" x="111" y="294" text-anchor="middle">准确率 ≥ 98.5%</text>
+    <text class="tiny" x="218" y="274">样本配比：正样本 30~200 / 类</text>
+    <text class="tiny" x="218" y="300">负样本 5000~20000；长尾 20~100</text>
+
+    <rect class="card" x="544" y="0" width="504" height="338" rx="22"/>
+    <circle class="red" cx="602" cy="58" r="34"/>
+    <path class="line" d="M588 50 l14 17 l24 -30"/>
+    <text class="h2" x="652" y="48">2.2 计划模式</text>
+    <text class="body" x="652" y="78">像项目经理：先拆任务，再逐步执行</text>
+    <g transform="translate(574 114)">
+      <rect class="small-card" x="0" y="0" width="86" height="50" rx="12"/>
+      <text class="tiny" x="43" y="31" text-anchor="middle">plan</text>
+      <rect class="small-card" x="124" y="0" width="96" height="50" rx="12"/>
+      <text class="tiny" x="172" y="31" text-anchor="middle">execute</text>
+      <rect class="small-card" x="258" y="0" width="82" height="50" rx="12"/>
+      <text class="tiny" x="299" y="31" text-anchor="middle">tool</text>
+      <rect class="small-card" x="378" y="0" width="90" height="50" rx="12"/>
+      <text class="tiny" x="423" y="31" text-anchor="middle">END</text>
+      <path class="thin" d="M86 25 H124" marker-end="url(#arrow)"/>
+      <path class="thin" d="M220 25 H258" marker-end="url(#arrow)"/>
+      <path class="thin" d="M340 25 H378" marker-end="url(#arrow)"/>
+      <path class="dash" d="M299 58 C299 92 172 92 172 58" marker-end="url(#arrow)"/>
+    </g>
+    <text class="body" x="572" y="220">简单：plan_node → execute_node → tool_node</text>
+    <text class="body" x="572" y="248">终止：Final Answer / tool_calls / execute</text>
+    <text class="body" x="572" y="276">复杂：past_steps + Action(Plan|Response)</text>
+    <text class="tiny" x="572" y="310">核心：每轮只返回剩余步骤；规划强模型，执行快模型</text>
+  </g>
+
+  <g transform="translate(76 923)">
+    <rect class="card" x="0" y="0" width="324" height="350" rx="22"/>
+    <circle class="gray" cx="56" cy="56" r="34"/>
+    <path class="line" d="M41 54 C54 30 83 45 70 70 C56 94 27 78 41 54"/>
+    <text class="h2" x="104" y="48">2.3 反思模式</text>
+    <text class="body" x="28" y="100">生成器 LLM → 初稿</text>
+    <text class="body" x="28" y="130">反思器 LLM → 反馈</text>
+    <path class="dash" d="M54 158 C154 112 266 128 270 194 C274 264 126 268 56 220" marker-end="url(#arrow)"/>
+    <text class="h3" x="28" y="278">四维审查</text>
+    <text class="tiny" x="28" y="305">安全性 / 规范性 / 效率性 / 任务对齐</text>
+    <text class="tiny" x="28" y="326">高风险场景必选；iterations ≤ 3</text>
+    <text class="tiny" x="28" y="346">STOP 关键词立即终止</text>
+
+    <rect class="card" x="362" y="0" width="324" height="350" rx="22"/>
+    <circle class="red" cx="418" cy="56" r="34"/>
+    <path class="line" d="M402 68 l16 -26 l16 26 M410 56 h16"/>
+    <text class="h2" x="466" y="48">2.4 CodeAct</text>
+    <text class="body" x="390" y="100">把编程语言当作通用工具空间</text>
+    <text class="tiny" x="390" y="130">LLM 生成 Python → 沙箱执行 → 返回 result</text>
+    <g transform="translate(390 166)">
+      <rect class="small-card" x="0" y="0" width="84" height="72" rx="14"/>
+      <text class="h3" x="42" y="30" text-anchor="middle">L1</text>
+      <text class="tiny" x="42" y="54" text-anchor="middle">exec</text>
+      <rect class="small-card" x="104" y="0" width="84" height="72" rx="14"/>
+      <text class="h3" x="146" y="30" text-anchor="middle">L2</text>
+      <text class="tiny" x="146" y="54" text-anchor="middle">受限解释器</text>
+      <rect class="small-card" x="208" y="0" width="84" height="72" rx="14"/>
+      <text class="h3" x="250" y="30" text-anchor="middle">L3</text>
+      <text class="tiny" x="250" y="54" text-anchor="middle">容器沙箱</text>
+    </g>
+    <text class="tiny" x="390" y="282">适合：临时计算、图表、动态工具</text>
+    <text class="tiny" x="390" y="306">入参变化大时，现场生成代码求解</text>
+    <text class="tiny" x="390" y="330">生产铁律：不要裸跑用户/模型生成代码</text>
+
+    <rect class="card" x="724" y="0" width="324" height="350" rx="22"/>
+    <circle class="gold" cx="780" cy="56" r="34"/>
+    <path class="line" d="M764 58 h32 M780 42 v32"/>
+    <text class="h2" x="828" y="48">2.5 HITL</text>
+    <text class="body" x="752" y="100">关键决策必须留给人</text>
+    <text class="body" x="752" y="134">强制介入：固定节点必停</text>
+    <text class="body" x="752" y="166">自主介入：LLM 主动 ask_user</text>
+    <g transform="translate(752 204)">
+      <rect class="small-card" x="0" y="0" width="132" height="52" rx="14"/>
+      <text class="tiny" x="66" y="31" text-anchor="middle">interrupt()</text>
+      <rect class="small-card" x="152" y="0" width="132" height="52" rx="14"/>
+      <text class="tiny" x="218" y="31" text-anchor="middle">checkpointer</text>
+      <rect class="small-card" x="0" y="72" width="132" height="52" rx="14"/>
+      <text class="tiny" x="66" y="103" text-anchor="middle">memory</text>
+      <rect class="small-card" x="152" y="72" width="132" height="52" rx="14"/>
+      <text class="tiny" x="218" y="103" text-anchor="middle">thread_id</text>
+    </g>
+    <text class="tiny" x="752" y="344">恢复：Command(resume) + await ainvoke</text>
+  </g>
+
+  <g transform="translate(76 1312)">
+    <rect class="card" x="0" y="0" width="504" height="190" rx="22"/>
+    <text class="h2" x="28" y="45">模式选择决策树</text>
+    <text class="body" x="28" y="82">听不懂用户 → 意图识别</text>
+    <text class="body" x="28" y="112">任务能拆步 → 计划模式（固定 / 动态）</text>
+    <text class="body" x="28" y="142">质量不稳或高风险 → 反思模式</text>
+    <text class="body" x="28" y="172">工具难预定义 → CodeAct；信息缺失或危险 → HITL</text>
+
+    <rect class="card" x="544" y="0" width="504" height="190" rx="22"/>
+    <text class="h2" x="572" y="45">LangGraph 踩坑清单</text>
+    <text class="body" x="572" y="82">interrupt 必须 async；设置 recursion_limit 防死循环</text>
+    <text class="body" x="572" y="112">thread_id 隔离会话；生产用 Redis/Postgres checkpointer</text>
+    <text class="body" x="572" y="142">结构化输出别混 few-shot；工具 docstring 与目录一字不差</text>
+    <text class="body" x="572" y="172">中文输入注意 stdin 编码；安全关键词触发 STOP</text>
+  </g>
+
+  <g transform="translate(80 1517)">
+    <path class="thin" d="M0 0 H1040"/>
+    <text class="tiny" x="0" y="28">核心收获：五种能力是 Agent 系统的“五脏六腑”；少任一项，复杂任务都会失稳。</text>
+    <text class="tiny" x="1040" y="28" text-anchor="end">极简复古信息图 / 3:4 / 深蓝线条 + 扁平复古色</text>
+  </g>
+</svg>
