@@ -79,8 +79,12 @@ for i in range(min(10, len(reader.pages))):
   - 必要时补充生活化类比（看病 / 做饭 / 报销 / 旅行 等）
 - **保留关键术语英文**：避免翻译损失（如 `ReAct`、`Code Agent`、`SubAgent`）
 - **不做评价、不做推断性结论**：仅复述与重组原文观点
-- **代码示例原则**（见下方"代码示例处理规范"）：原书含代码时，深度解读必须保留可运行代码段
-- **图表重绘原则**（见下方"原书图表 Mermaid 重绘规范"）：原书含架构图 / 时序图 / 流程图时，**必须**用 Mermaid 重新绘制
+- **原创性改写（防侵权）**：提取核心观点 / 示例时**必须**用自己的话重新表述，禁止直接复用原文整句、整段。允许的做法：
+  - 提取核心概念后用同义改写、结构调整、视角转换
+  - 把长段落压缩成 1~2 句要点，再用自己组织的句式展开
+  - 引用原文时**单句不超过 30 字**，且必须明确标注「引自原文」并加引号
+  - 案例可借鉴思路，但场景 / 数字 / 人物必须替换或泛化，避免 1:1 复刻
+  - 表格 / 列表的列名和结构可以借鉴，但内容必须重新组织，不照抄条目顺序与措辞
 
 ---
 
@@ -123,309 +127,10 @@ title: {章节标题}
 
 **禁止**：
 - ❌ 提到原始资料的书名 / 作者 / 出版社
-- ❌ 大段照抄原文（最多引用关键 1~2 句）
+- ❌ 大段照抄原文（最多引用关键 1~2 句，**单句 ≤30 字，必须加引号标注「引自原文」**）
+- ❌ 直接复用原文章节、段落、表格的完整措辞——必须同义改写、结构调整、视角转换
+- ❌ 复用原文案例的具体人物、数字、地点（可借鉴思路，细节必须替换）
 - ❌ 每个章节超过 500 字（信息密度优先）
-- ❌ 删掉原书的代码示例（必须保留并加注释说明）
-
-**代码示例处理规范**（核心要求）：
-
-> 当原文含代码示例时，深度解读 **必须** 保留并精炼可运行代码段。
-
-| 场景 | 处理方式 | 段数参考 |
-|------|----------|----------|
-| **原书有完整代码** | 完整保留 + 加 `### 关键代码` 小节 + 关键行注释 | 每个核心模式 1~3 段 |
-| **原书有伪代码 / 示意** | 转写为可运行的 Python / 伪代码 | 每节 1 段 |
-| **原书无代码但概念可代码化** | 自补 1 段最小可运行示例 | 视情况 1 段 |
-| **原书代码过长（>50 行）** | 保留核心 + 折叠次要 + 加 `> 完整代码见原文` 链接 | 保留 30~50 行 |
-| **口播稿中** | 代码改写为"口述步骤"或 1~3 句要点 | 不出现完整代码 |
-| **配图提示词中** | 代码作为视觉锚点（如 "code block with `ReAct` 循环"） | 不展开 |
-
-**代码段的标准结构**：
-
-````markdown
-### 关键代码：{模式名称}
-
-**用途**：{一句话说明}
-
-```python
-{完整可运行代码}
-```
-
-**关键点**：
-- {点 1：关键参数 / 设计}
-- {点 2：常见踩坑}
-- {点 3：性能 / 安全考量}
-````
-
-**代码处理三原则**：
-1. **可运行优先**：保留 import + 完整函数 + 调用入口
-2. **不写注释原则在代码中豁免**：提炼的代码段**允许**加少量关键注释（≤5 行），让读者能看懂
-3. **不改动核心逻辑**：原书代码 100% 保留，仅做格式化（去行号、补空格）
-
-**反例**：
-
-```markdown
-❌ 只贴图不贴代码：![架构图](xxx.png)  # 用户看不到代码
-❌ 只描述不贴代码：详见原文 8.2 节      # 读者还要回头翻书
-❌ 代码截断不完整：def add(x, y): ...   # 关键逻辑缺失
-❌ 改写核心逻辑：作者用 for 循环，我改成 while  # 失真
-```
-
-**原书图表 Mermaid 重绘规范**（核心要求）：
-
-> 当原书含**架构图 / 时序图 / 流程图 / 状态机图 / 组件关系图**时，深度解读 **必须** 用 **Mermaid** 重新绘制，**不得**仅放 `![图 X-Y](path)` 引用，也**不要**用 ASCII 字符画流程图。
-
-**为什么必须用 Mermaid 而非 ASCII**：
-- ASCII 流程图**阅读性差**：用户在终端 / IDE 看到大量 `┌─┐│└┘` 字符会非常难受
-- ASCII 流程图**不可缩放**：放大缩小都模糊
-- ASCII 流程图**不可交互**：鼠标悬停 / 点击 / 缩放都不支持
-- **Mermaid 原生支持**：GitHub / GitLab / VS Code / Obsidian / Next.js（rehype-mermaid）全部原生渲染
-- **可复制 / 可编辑**：用户可一键复制 Mermaid 源码修改
-- **可缩放 / 可交互**：现代渲染器支持缩放、点击高亮
-
-**Mermaid 8 种图表类型速查**：
-
-| 原书图表 | Mermaid 类型 | 关键字 | 适用场景 |
-|----------|-------------|--------|----------|
-| **架构图** | `flowchart` / `graph` | TD / LR / TB | 组件关系、层次结构 |
-| **时序图** | `sequenceDiagram` | `participant`, `->>`, `-->>` | 角色交互、消息流 |
-| **状态机图** | `stateDiagram-v2` | `state`, `-->`, `note left` | 状态转换 |
-| **类图** | `classDiagram` | `class`, `<\|--`, `*--` | 实体 / 类 / 接口关系 |
-| **ER 图** | `erDiagram` | `\|\|--o{`, `PK`, `FK` | 数据库表关系 |
-| **甘特图** | `gantt` | `dateFormat`, `section` | 时间线 / 项目进度 |
-| **饼图** | `pie` | `title`, `:`, `value` | 占比 / 分布 |
-| **用户旅程** | `journey` | `section`, `Task` | 用户操作路径 |
-
-**Mermaid 图标准结构**：
-
-````markdown
-> **图 X-Y：{原图标题}**（原图 Mermaid 重绘）
-
-\`\`\`mermaid
-graph TD
-    A[用户] --> B[编排器]
-    B --> C{群组需要触发词?}
-    C -->|是| D[激活 Agent]
-    C -->|否| E[跳过]
-    D --> F[处理消息]
-    F --> G[返回结果]
-\`\`\`
-
-**关键解读**：
-- {点 1：架构层次}
-- {点 2：组件交互}
-- {点 3：数据流向}
-````
-
-**8 大 Mermaid 图表语法速览**：
-
-#### 1. flowchart（架构 / 流程 / 决策图）
-
-```mermaid
-graph TD
-    A[方形节点] --> B(圆角节点)
-    A --> C{菱形判断}
-    C -->|是| D[/平行四边形/]
-    C -->|否| E[[子流程]]
-    D --> F[(圆柱形数据库)]
-```
-
-**节点形状**：
-- `[文本]` 矩形
-- `(文本)` 圆角矩形
-- `{文本}` 菱形（判断）
-- `[(文本)]` 圆柱形（数据库）
-- `([文本])` 体育场形
-- `[[文本]]` 子流程
-- `[(文本)]` 圆柱
-- `>文本]` 不对称（flag 形）
-
-**方向**：
-- `TD` / `TB` 上到下
-- `LR` 左到右
-- `RL` 右到左
-- `BT` 下到上
-
-**连线**：
-- `--> 实线箭头`
-- `--- 实线无箭头`
-- `-.-> 虚线箭头`
-- `==> 粗线箭头`
-- `-->|标签|` 带文字的箭头
-- `~~~ 不可见链接`（用于布局）
-
-#### 2. sequenceDiagram（时序图）
-
-```mermaid
-sequenceDiagram
-    participant A as 用户
-    participant B as 编排器
-    participant C as Agent
-    A->>B: 发送消息
-    B->>C: 激活 Agent
-    C-->>B: 返回结果
-    B-->>A: 回复消息
-    Note over A,C: 消息流转说明
-```
-
-**关键元素**：
-- `participant 别名 as 显示名`：声明角色
-- `->>` 实线箭头（同步）
-- `-->> 虚线箭头（响应）`
-- `Note left/right/over`：注释
-- `loop / end`：循环
-- `alt / else / end`：条件分支
-
-#### 3. stateDiagram-v2（状态机）
-
-```mermaid
-stateDiagram-v2
-    [*] --> 待处理
-    待处理 --> 处理中: 激活 Agent
-    处理中 --> 空闲: 完成
-    处理中 --> 已关闭: 30 分钟超时
-    空闲 --> 处理中: 新消息
-    空闲 --> [*]
-    已关闭 --> [*]
-```
-
-#### 4. classDiagram（类图）
-
-```mermaid
-classDiagram
-    class Agent {
-        +String name
-        +run(task)
-        -validate(input)
-    }
-    class Skill {
-        +String name
-        +load()
-    }
-    Agent "1" --> "*" Skill: uses
-```
-
-#### 5. erDiagram（ER 图）
-
-```mermaid
-erDiagram
-    USER ||--o{ TASK : has
-    USER {
-        int id PK
-        string name
-    }
-    TASK {
-        int id PK
-        int user_id FK
-        string subject
-    }
-```
-
-**关系符号**：
-- `||--||` 一对一
-- `||--o{` 一对多
-- `}o--o{` 多对多
-
-#### 6. gantt（甘特图）
-
-```mermaid
-gantt
-    title 项目进度
-    dateFormat YYYY-MM-DD
-    section 阶段一
-    任务1 :a1, 2026-01-01, 7d
-    任务2 :after a1, 5d
-    section 阶段二
-    任务3 :2026-01-13, 10d
-```
-
-#### 7. pie（饼图）
-
-```mermaid
-pie title 时间分配
-    "开发" : 45
-    "测试" : 20
-    "文档" : 15
-    "会议" : 10
-    "其他" : 10
-```
-
-#### 8. journey（用户旅程）
-
-```mermaid
-journey
-    title 用户部署 NanoClaw
-    section 准备
-      安装依赖: 3: 用户
-      配置 .env: 2: 用户
-    section 部署
-      编译镜像: 4: 用户
-      启动服务: 5: 用户
-    section 测试
-      飞书对话: 5: 用户
-      定时任务: 4: 用户
-```
-
-**Mermaid 渲染兼容性**：
-
-| 渲染器 | 支持 | 备注 |
-|--------|------|------|
-| GitHub | ✅ 原生 | ` ```mermaid ` 代码块自动渲染 |
-| GitLab | ✅ 原生 | 同上 |
-| VS Code | ✅ 插件 | Markdown Preview Enhanced |
-| Obsidian | ✅ 原生 | 完整支持 |
-| Next.js + rehype-mermaid | ✅ 插件 | 推荐：`remark-gfm` + `rehype-mermaid` |
-| Typora | ✅ 原生 | 内置渲染 |
-| 终端 cat | ❌ 不渲染 | 看到 Mermaid 源码（**这一点反比 ASCII 强**） |
-
-**Next.js 项目集成方案**（`smarphin-knowledge-hub`）：
-
-```bash
-npm install remark-mermaid rehype-mermaid
-```
-
-```typescript
-// next.config.ts / mdx 配置
-import remarkMermaid from 'remark-mermaid'
-
-export default {
-  remarkPlugins: [remarkGfm, [remarkMermaid, { strategy: 'img-svg' }]],
-  rehypePlugins: [],
-}
-```
-
-**Mermaid 实战注意事项**：
-
-| 注意点 | 说明 |
-|--------|------|
-| **中文字符** | 直接写中文即可，**保留原书所有中文** |
-| **节点标识符** | 字母数字组合，**不要**含空格 / 特殊字符 |
-| **显示文本** | 用 `node["显示文本"]` 或 `node(显示文本)` |
-| **换行** | 节点文本用 `<br/>` 换行（如 `A["第一行<br/>第二行"]`） |
-| **注释** | 流程图用 `%% 注释`，时序图用 `Note` |
-| **主题** | 可加 `%%{init: {'theme':'dark'}}%%` 切换暗色主题 |
-| **复杂图** | 拆成多个子图，用 `subgraph` 分组 |
-| **样式定制** | `classDef 类名 fill:#f9f,stroke:#333` 自定义节点颜色 |
-
-**反例**：
-
-```markdown
-❌ 用 ASCII 字符画流程图：主进程 ─→ 容器 ─→ Agent
-    阅读性极差，且现代 IDE 渲染混乱
-❌ 只引用不重绘：![图 7-1 NanoClaw 架构](path/to/image.png)
-    前端找不到
-❌ 只描述不重绘：原图展示了 NanoClaw 的一内一外架构
-    用户看不到
-❌ 不用 mermaid 关键字：```flow 而不是 ```mermaid
-    部分渲染器不识别
-```
-
-**特殊场景**：
-
-1. **图片含数据表格** → 直接转成 markdown 表格（**必须**保留）
-2. **图片含代码截图** → 转写为可运行代码（按"代码示例处理规范"）
-3. **图片含 UI 截图** → 用 Mermaid flowchart 重绘主要布局 + 文字说明细节
-4. **图片含大量中文** → 直接写在 Mermaid 节点里，**100% 保留**
 
 ---
 
@@ -475,14 +180,25 @@ export default {
 
 > 用途 / 图片总数 / 生成地址 / 可用尺寸
 
-## 图片 {N}：{主题}（{场景}）
-**尺寸**：landscape_16_9 / portrait_4_3 / square_hd
+## 图片 {N}：{主题}（{场景} · 风格{N}/7）
+**尺寸**：landscape_16_9
+**风格**：{从 7 种风格库中选 1}
+**信息密度**：moderate
 **提示词**：
 ```
-A cinematic wide-angle illustration of ...
+{英文 prompt，必含 6 元素：主体 + 中文标签 + 配色 + 风格 + 构图 + 密度}
 ```
 
 ## 图片 {N+1}：...
+
+## 章节总结图（第 N 章 · 强制 1 张）
+**尺寸**：portrait_3_4
+**风格**：极简复古插画（固定模板）
+**信息密度**：rich infographic
+**提示词**：
+```
+{使用章节总结图固定模板}
+```
 
 ## 配套图片清单（汇总表格）
 | # | 主题 | 对应章节 | 尺寸 | 信息密度重点 |
@@ -493,20 +209,126 @@ A cinematic wide-angle illustration of ...
 3. URL 编码提醒
 ```
 
-**图片数量**：根据内容拆为 **8~15 张**，每张对应一个核心知识点。
+**图片数量**：根据内容拆为 **8~14 张**（加上每章强制要求的章节总结图，共 **9~15 张**）。
 
-**每张图的提示词必须包含**：
+**图片分类（必须按功能拆）**：
+
+| 类型 | 数量 | 默认尺寸 | 信息密度 | 风格 |
+|------|------|---------|---------|------|
+| **封面图**（开场钩子 / 核心比喻） | 1 | **landscape_16_9** | 中等 | 多变风格之一 |
+| **正文配图**（核心概念 / 数据流 / 决策树） | 7~12 | **landscape_16_9** | **适中**（不稀不挤） | 多变风格之一 |
+| **章节总结图**（强制要求，每章 1 张） | **1** | **portrait_3_4** | **极高**（必须覆盖本章所有关键概念） | **极简复古插画**（详见下方固定模板） |
+
+> ⚠️ **章节总结图是硬性要求**——每章必须额外生成 1 张 `portrait_3_4` 的总结图，把本章 5~8 个关键概念压缩到一张信息密集的回顾图里。它是用户在朋友圈/小红书/公众号分享的核心素材。
+
+**每张图的提示词必须包含 6 个必备元素**：
 1. **场景/主体**（具体到人物/物体/构图）
 2. **中文标签**（用括号标注在元素旁，如 `labeled "意图识别"`）
 3. **配色**（具体到主色 + 辅色，避免"好看"等虚词）
-4. **风格关键词**（editorial / cinematic / flat design / isometric 3D / neon cyberpunk）
-5. **构图说明**（16:9 / 1:1 / 4:3 竖版时间线）
+4. **风格关键词**（**必须从下方风格库随机选 1 种，禁止 8 张图全用同一种风格**）
+5. **构图说明**（默认 **landscape_16_9**，总结图用 portrait_3_4）
+6. **信息密度标注**（"moderate detail" / "rich infographic detail" 等）
+
+**🎨 风格库（7 种风格，禁止默认"蓝色赛博")**
+
+> 生成正文配图时，**必须**从以下 7 种风格中**循环切换**，避免视觉单调。**绝对禁止**所有图都用"蓝色 + 科技感"这种 AI 默认套路。
+
+| # | 风格名 | 视觉特征 | 适用场景 | 配色关键词 |
+|---|--------|---------|---------|----------|
+| 1 | **Cinematic Editorial** | 电影感叙事插画，景深与光影 | 开场钩子 / 情感类比喻 | warm amber, deep teal, soft shadow |
+| 2 | **Flat Design Infographic** | 扁平信息图，2.5D 层次 | 数据流 / 流程图 / 对比矩阵 | muted ochre, ivory, slate gray |
+| 3 | **Isometric 3D** | 等距 3D，工程蓝图感 | 架构 / 组件 / 容器 | olive green, terracotta, cream |
+| 4 | **Magazine Spread** | 杂志跨页，编辑设计 | 决策树 / 矩阵 / 复杂对比 | charcoal, rust orange, off-white |
+| 5 | **Tech-Noir Illustration** | 暗调科技插画，强对比 | Hooks / 拦截 / 安全守护 | deep black, neon emerald, charcoal |
+| 6 | **Hand-drawn Sketch** | 手绘速写，工程笔记本感 | 类比 / 生活化场景 | sepia, kraft brown, soft black |
+| 7 | **Editorial Doodle** | 编辑涂鸦，符号化视觉 | 思维导图 / 知识地图 | dusty pink, sage green, cream |
+
+**🎯 信息密度规则**：
+
+- **正文配图**（16:9）：**中等密度**
+  - ✅ 至少 3 个核心视觉元素（如 3 个角色 / 3 层架构 / 3 个流程节点）
+  - ✅ 至少 2 个文字标签锚点
+  - ❌ 不要只画一个孤独元素（比如单独一个图标）
+  - ❌ 不要塞 10+ 元素导致拥挤（信息过载等于失焦）
+
+- **章节总结图**（3:4）：**高密度**
+  - ✅ 必须包含本章所有 5~8 个核心概念（按层级 / 时间 / 矩阵组织）
+  - ✅ 至少 5~8 个文字标签
+  - ✅ 视觉层级清晰：标题 + 主图区 + 概念列表 + 关键金句
+
+---
+
+### 📜 章节总结图 · 固定模板（每章强制要求 1 张）
+
+> **每章最后一张图必须是这张**，尺寸 **portrait_3_4**，固定使用以下极简复古插画风格。所有章节总结图共享同一视觉语言，保证系列感。
+
+**风格规范（必须严格遵守）**：
+- **线条**：干净均匀的深藏青蓝线条（Deep Navy），线宽一致
+- **填色**：扁平上色，无渐变无光影
+- **配色（限 5 色）**：
+  - 背景：柔和米色（soft beige）
+  - 主线条 / 文字：深藏青（deep navy）
+  - 强调色 1：砖红（brick red）
+  - 强调色 2：柔和灰（soft gray）
+  - 强调色 3：柔和金（soft gold）
+- **字体**：干净的无衬线（sans-serif）+ 经典衬线（serif）混排
+- **设计语言**：信息化和信息图表设计（infographic / information design），清晰的概念可视化
+
+**模板结构（按从上到下分区）**：
+
+```
+┌─────────────────────────────┐
+│ 章节标题（serif 衬线大字）      │ ← 顶部
+├─────────────────────────────┤
+│ 主视觉锚图（本章核心比喻）        │ ← 占据画面 40%
+│ 例：冰山 / 摩天大楼 / 入职手册    │
+├─────────────────────────────┤
+│ 概念卡片 1 │ 概念卡片 2 │ 概念卡片 3│ ← 三栏并列
+│ 概念卡片 4 │ 概念卡片 5 │ 概念卡片 6│ ← 第二行
+├─────────────────────────────┤
+│ 贯穿主线（一句话哲学金句）         │ ← 底部 serif 斜体
+└─────────────────────────────┘
+```
+
+**模板 Prompt 骨架**（按章节主题替换 `{占位符}`）：
+
+```text
+A portrait 3:4 minimalist vintage illustration serving as a chapter summary infographic. The background is soft beige. All outlines are clean uniform deep navy blue lines with consistent stroke width, flat coloring, no gradients, no shadows. Limited vintage palette: soft beige background, deep navy outlines, brick red accents, soft gray secondary elements, soft gold highlights. Typography mixes clean sans-serif for labels and classic serif for the chapter title and a philosophical tagline at the bottom. Information design with clear concept visualization.
+
+Top: serif title text "{章节主题}" in deep navy.
+
+Center (40% of canvas): a single iconic visual anchor representing the chapter's core metaphor — {核心比喻：例如 a massive iceberg / a four-layer skyscraper / a leather-bound handbook}.
+
+Middle grid: 6 small flat-colored icon-and-label cards arranged in 2 rows × 3 columns, each card containing a simple symbolic icon and a sans-serif label for one of the chapter's key concepts — {概念 1} / {概念 2} / {概念 3} / {概念 4} / {概念 5} / {概念 6}.
+
+Bottom: a serif italic philosophical tagline summarizing the chapter's core insight — "{贯穿主线金句，例如 'Harness 比 Model 更重要'}".
+
+Editorial information design quality, print-ready, 300dpi-equivalent detail, magazine-style clarity, no decorative ornaments beyond the specified palette.
+```
+
+**章节总结图的硬约束**：
+- ❌ 不要画超过 6 个概念卡片（信息过载，反而失焦）
+- ❌ 不要使用品牌 logo、卡通人物、emoji
+- ❌ 不要画渐变、阴影、3D 立体效果
+- ❌ 不要混入其他风格（赛博 / 霓虹 / 写实）
+- ✅ 必须包含至少 5 个本章核心概念
+- ✅ 概念之间必须有视觉关联（连线 / 层级 / 矩阵）
+- ✅ 整体视觉必须"一眼看懂本章"
+
+---
 
 **生成地址模板**（用户后续调用）：
 
 ```
 https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={URL编码}&image_size={尺寸}
 ```
+
+**尺寸枚举**（根据 image_size 字段对应）：
+
+| image_size | 比例 | 用途 |
+|-----------|------|------|
+| `landscape_16_9` | 16:9 横版 | **默认**（封面 + 所有正文配图） |
+| `portrait_3_4` | 3:4 竖版 | **章节总结图**（每章 1 张强制） |
 
 ---
 
@@ -515,88 +337,31 @@ https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={URL编码}&image_
 **三件套分两个目录落盘**，**深度解读单独定位**以支持前端渲染：
 
 ```
-wenque-ai/
-├── smarphin-knowledge-hub/docs/
-│   └── {category}/                              # 资料分类（harness-engine / ai-product / ...）
-│       └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
-│
-└── assets/abstract/
-    └── {书名或文章标题}/                        # ⚠️ 第一层目录：书籍/文章名
-        ├── 第N章-{章节主题}-深度解读.md          # ⚠️ 必须含章节标识
-        ├── 第N章-{章节主题}-口播文案稿.md
-        └── 第N章-{章节主题}-配图提示词.md
+smarphin-knowledge-hub/docs/
+└── {category}/                              # 资料分类（harness-engine / ai-product / ...）
+    └── chapter-{N}-{slug}.md                # 深度解读（前端直接读取渲染）
+
+assets/abstract/
+├── {主题}-深度解读.md                       # 备份 / 离线查阅
+├── {主题}-口播文案稿.md                     # 内容传播用
+└── {主题}-配图提示词.md                     # 内容传播用
 ```
-
-**命名规范（重要）**：
-
-| 层级 | 命名规则 | 示例 |
-|------|----------|------|
-| **第一层目录** | **必须**用书名 / 文章标题命名 | `Harness工程/` / `深入理解计算机系统/` / `硅谷来信/` |
-| **第二层文件** | **必须**含章节标识（`第N章` / `Chapter-N` / `Section-N`） | `第2章-上下文的元驱动-深度解读.md` |
-| **书籍类** | 章节用 `第N章-{主题}` 格式 | `第3章-DeepResearch-深度解读.md` |
-| **文章类** | 无章节用 `全文` 或日期标识 | `全文-AI行业分析-深度解读.md` |
-| **课程类** | 章节用 `Lesson-N` 格式 | `Lesson-5-提示词工程-深度解读.md` |
 
 **关键约束**：
-
 1. **深度解读必须双写**：
    - **主写**：`smarphin-knowledge-hub/docs/{category}/chapter-{N}-{slug}.md`（带 frontmatter `title: {章节标题}`）
-   - **备份写**：`assets/abstract/{书名}/第N章-{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
+   - **备份写**：`assets/abstract/{主题}-深度解读.md`（无 frontmatter，方便直接 cat 看）
 2. **`{category}`**：从原书 / 资料主题推断（如 Harness 工程 → `harness-engine`）；若用户指定，优先用户值
 3. **`{slug}`**：英文小写 + 连字符（如 `context-driver` / `prompt-to-context`）
-4. **`{书名}`**：
-   - **从 PDF 文件名 / 文章标题提取**
-   - **去掉版本号、出版社、作者**等冗余信息
-   - **保留核心书名**（如 `Harness工程：从上下文管理到Agent系统构建.pdf` → `Harness工程/`）
-   - 目录名**不含空格、特殊字符**，可用 `_` 或连字符
-5. **口播 + 配图**：只写一份到 `assets/abstract/{书名}/`，不进前端
-6. **生成前先 `mkdir -p assets/abstract/{书名}`**，避免目录不存在报错
-7. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
+4. **口播 + 配图**：只写一份到 `assets/abstract/`，不进前端
+5. **生成前先 `mkdir -p`**，避免目录不存在报错
+6. **生成后必须 cd 到 `smarphin-knowledge-hub/` 跑一次构建**（如 `npm run build`），验证前端能解析
 
 时间戳不需要（每个资料独立目录即可，资料本身就是唯一标识）。
-
-**目录结构示例**（Harness 工程 7 章已应用）：
-
-```
-wenque-ai/
-├── smarphin-knowledge-hub/docs/harness-engine/
-│   ├── chapter-1-prompt-to-context.md          # 第一章
-│   ├── chapter-2-context-driver.md             # 第二章
-│   ├── chapter-3-deep-research.md              # 第三章
-│   ├── chapter-4-memory-engineering.md         # 第四章
-│   ├── chapter-5-skills.md                     # 第五章
-│   ├── chapter-6-harness-practice.md           # 第六章
-│   └── chapter-7-claw-architecture.md          # 第七章
-│
-└── assets/abstract/
-    └── Harness工程/
-        ├── 第1章-从提示词到上下文工程-深度解读.md
-        ├── 第1章-从提示词到上下文工程-口播文案稿.md
-        ├── 第1章-从提示词到上下文工程-配图提示词.md
-        ├── 第2章-上下文的元驱动-深度解读.md
-        ├── 第2章-上下文的元驱动-口播文案稿.md
-        ├── 第2章-上下文的元驱动-配图提示词.md
-        ├── 第3章-DeepResearch-深度解读.md
-        ├── 第3章-DeepResearch-口播文案稿.md
-        ├── 第3章-DeepResearch-配图提示词.md
-        ├── 第4章-记忆工程-深度解读.md
-        ├── 第4章-记忆工程-口播文案稿.md
-        ├── 第4章-记忆工程-配图提示词.md
-        ├── 第5章-Skills上下文卸载-深度解读.md
-        ├── 第5章-Skills上下文卸载-口播文案稿.md
-        ├── 第5章-Skills上下文卸载-配图提示词.md
-        ├── 第6章-Harness实战-深度解读.md
-        ├── 第6章-Harness实战-口播文案稿.md
-        ├── 第6章-Harness实战-配图提示词.md
-        ├── 第7章-Claw架构-深度解读.md
-        ├── 第7章-Claw架构-口播文案稿.md
-        └── 第7章-Claw架构-配图提示词.md
-```
 
 ### 8. 输出确认
 
 完成后向用户报告：
-
 - 所有输出文件的绝对路径（Code Reference 链接，**深度解读要列出 2 份**）
 - 每个文件的行数 / 大小
 - 内容结构概览
@@ -607,24 +372,21 @@ wenque-ai/
 
 - **绝不**把整本 PDF 一次性加载到上下文再总结（容易 OOM 且不精准）
 - **绝不**大段照抄原文——总结 + 重组 + 类比才是价值
+- **绝不**直接复用原文句子、段落、列表条目、表格行——必须同义改写或重组
+- **绝不**复用原文案例的具体细节（人物 / 数字 / 公司名 / 地点），可保留思路但替换场景
 - **绝不**省略案例除非用户明确说"不要案例"
 - **绝不**修改原文观点或添加未经验证的信息
 - **绝不**输出"以上是我对第 N 章的总结"这类客套话
 - **绝不**在生成内容里提到原始资料的书名 / 作者 / 出版社
 - **绝不**生成超过 15 张图（信息密度会下降）
+- **绝不**所有图都用同一种风格——必须从 7 种风格库中循环切换
+- **绝不**用默认"蓝色赛博"风格作为通用解（视觉单调）
+- **绝不**省略每章强制要求的章节总结图（`portrait_3_4`，极简复古风格）
+- **绝不**让章节总结图混入渐变、阴影、3D 效果——必须是扁平复古插画
+- **绝不**让正文配图信息密度过稀（至少 3 视觉元素 + 2 文字标签）或过挤（不超过 8 元素）
 - **绝不**把生成物提交到 git——`assets/abstract/` 应在 `.gitignore`
 - **绝不**省略深度解读的 gray-matter frontmatter（前端 `gray-matter` 解析会失败）
 - **绝不**用中文 / 含空格的 category 或 slug（路由会失效）
-- **绝不**删掉原书的代码示例（保留并加注释说明，代码段允许豁免"不写注释"原则）
-- **绝不**把代码改写成失真版本（保留作者原始逻辑，仅做格式化）
-- **绝不**用图片 / 链接替代代码段（用户看不到代码就是失败的总结）
-- **绝不**用图片引用替代 Mermaid 图（原书 PDF 图片前端无法渲染，必须用 Mermaid 重绘）
-- **绝不**用 ASCII 字符画流程图（阅读性极差，必须用 Mermaid）
-- **绝不**只描述原图不重绘（必须用 Mermaid 重绘 + 文字解读）
-- **绝不**改动原书图片中的中文文字（保留所有原始中文）
-- **绝不**把深度解读 / 口播稿直接平铺在 `assets/abstract/` 根目录（必须放在 `{书名}/` 子目录）
-- **绝不**省略文件名中的章节标识（必须含 `第N章` / `Chapter-N` / `Lesson-N` 等）
-- **绝不**在 `{书名}` 中带空格或特殊字符（用 `_` 或连字符）
 - 用户没说英文就**默认中文**
 - 图片 prompt 必须用**英文**写（生成模型对英文 prompt 更稳定）
 - 每个生成物单独一份 md，**不要打包成单个文件**（方便单独迭代）
@@ -641,16 +403,12 @@ wenque-ai/
 - ❌ 不要在摘要里写"接下来我们看下一节"这种过渡——直接列要点
 - ❌ 不要给"用户友好建议"或"操作指引"——只做内容提炼
 - ❌ 不要给章节超过 3 层嵌套标题（信息密度下降）
-- ❌ 不要因为代码长就删（保留 30~50 行 + 折叠次要 + 标注"完整见原文"）
-- ❌ 不要把代码截断成 `def add(): ...`（关键逻辑丢失）
-- ❌ 不要把代码改写成伪代码（除非原书本身是伪代码）
-- ❌ 不要在口播稿里出现完整代码（改口述或要点）
-- ❌ 不要在配图提示词里堆砌整段代码（用作视觉锚点即可）
-- ❌ 不要用 ASCII 字符画流程图（必须用 Mermaid）
-- ❌ 不要因为 Mermaid 复杂就放弃（复杂图也要画，宁可拆成子图也不能省略）
-- ❌ 不要用错误代码块语法（必须用 ` ```mermaid ` 而非 ` ```flow `）
-- ❌ 不要把生成物平铺在 `assets/abstract/` 根目录（必须建 `{书名}/` 子目录）
-- ❌ 不要省略章节标识（必须 `第N章-主题-类型.md` 格式）
+- ❌ 不要为了省事直接搬原文段落——必须先提炼要点，再用自己的话重写
+- ❌ 不要保留原文案例的人物名 / 公司名 / 具体数字——换成泛化场景或匿名化
+- ❌ 不要所有配图都用同一种风格——必须从 7 种风格库中循环切换
+- ❌ 不要让正文配图变成"单个图标 + 大片留白"（信息过稀）或"塞满 10+ 元素"（信息过载）
+- ❌ 不要给章节总结图混入渐变、阴影、3D 立体——只允许扁平复古插画
+- ❌ 不要忘了生成章节总结图（每章强制 1 张 `portrait_3_4`）
 
 ## Quick Reference（速查）
 
@@ -663,13 +421,11 @@ wenque-ai/
 
 | 输出类型 | 字数参考 | 章节数 |
 |---------|---------|--------|
-| 深度解读 md | 3000~6000 字 | 5~8 节（含 3~5 段代码 + 3~5 张 Mermaid 图） |
+| 深度解读 md | 3000~6000 字 | 5~8 节 |
 | 口播稿 md | 2000~2500 字 | 8~10 段 |
-| 配图提示词 md | 8~15 张图 | 每张 100~200 字英文 prompt |
-| 单段代码 | 30~50 行 | 完整可运行 + 关键注释 |
-| 单张 Mermaid 图 | 10~40 行 | 完整可读 + 关键解读 |
-| 口播稿代码 | 0 行 | 改口述或 1~3 句要点 |
-| 配图提示词代码 | 1~3 行 | 视觉锚点，不展开 |
+| 配图提示词 md | 8~14 张正文 + 1 张总结图 = **9~15 张** | 每张 100~200 字英文 prompt |
+| 正文配图 | 16:9 横版（landscape_16_9） | 中等密度，3+ 视觉元素 |
+| 章节总结图 | 3:4 竖版（portrait_3_4） | 高密度，5~8 核心概念 |
 
 ## 依赖
 
@@ -705,3 +461,4 @@ wenque-ai/
 2. 生成三件套（深度解读 + 口播稿 + 配图提示词）
 3. 全部写入 `assets/abstract/`
 4. 返回路径 + 字数 + 建议首张配图作为封面
+
