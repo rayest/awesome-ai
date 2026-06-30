@@ -1,0 +1,2 @@
+{"name":"customer_orders_refund","kind":"function_calling","prompt":"查看客户 C-1001 最近订单、工单和退款建议","expect_tools":["get_customer_profile","list_recent_orders","calculate_refund","search_support_tickets"]}
+{"name":"github_plan_readonly","kind":"github_mcp","repo":"openai/openai-agents-python","task":"分析最近失败的 CI","mode":"read_only","expect_write_actions":0}
