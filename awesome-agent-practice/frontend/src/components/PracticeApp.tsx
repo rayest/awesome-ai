@@ -1,6 +1,13 @@
-import { ArrowUp, Braces, Flame, Github, Layers3, MessageSquare, ShieldCheck, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowUp, BookOpen, Braces, Flame, Github, Layers3, MessageSquare, ShieldCheck, Sparkles, Trophy, Users } from "lucide-react";
 import { useState } from "react";
-import { buildGithubPlan, GithubPlanResponse, runFunctionCalling, FunctionCallResponse } from "../lib/api";
+import {
+  buildGithubPlan,
+  fetchPracticeTheory,
+  FunctionCallResponse,
+  GithubPlanResponse,
+  PracticeTheoryResponse,
+  runFunctionCalling,
+} from "../lib/api";
 
 type LabId = "function" | "github";
 
@@ -8,14 +15,14 @@ const labs = [
   {
     id: "function" as const,
     title: "Function Calling",
-    description: "学习模型如何选择工具、组装参数，并把结果交还给模型继续推理。",
+    description: "根据客户、订单、库存和工单数据生成业务判断。",
     icon: Braces,
     status: "已实现",
   },
   {
     id: "github" as const,
     title: "GitHub MCP",
-    description: "学习通过 MCP 暴露 GitHub 工具集，并在计划模式下控制读写边界。",
+    description: "把 GitHub 开发任务整理成可审批的执行计划。",
     icon: Github,
     status: "已实现",
   },
@@ -60,6 +67,8 @@ export function PracticeApp() {
   const [functionResult, setFunctionResult] = useState<FunctionCallResponse | null>(null);
   const [githubPlan, setGithubPlan] = useState<GithubPlanResponse | null>(null);
   const [loading, setLoading] = useState<"function" | "github" | null>(null);
+  const [theoryLoading, setTheoryLoading] = useState<LabId | null>(null);
+  const [theory, setTheory] = useState<PracticeTheoryResponse | null>(null);
   const [error, setError] = useState("");
 
   async function submitFunctionCalling() {
@@ -86,6 +95,18 @@ export function PracticeApp() {
     }
   }
 
+  async function loadTheory(lab: LabId) {
+    setTheoryLoading(lab);
+    setError("");
+    try {
+      setTheory(await fetchPracticeTheory(lab));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Practice theory request failed");
+    } finally {
+      setTheoryLoading(null);
+    }
+  }
+
   return (
     <main className="app-shell">
       {error && <div className="error">{error}</div>}
@@ -94,7 +115,7 @@ export function PracticeApp() {
         <aside className="sidebar" aria-label="Practice labs">
           <div className="brand-block">
             <p className="eyebrow">Agent builders</p>
-            <strong>Awesome Agent Practice</strong>
+            <strong>Awesome AI</strong>
             <span>实战社区</span>
           </div>
 
@@ -139,9 +160,9 @@ export function PracticeApp() {
         <section className="main-column">
           <section className="hero">
             <div>
-              <p className="eyebrow">Agent practice community</p>
-              <h1>和真实项目一起练 Agent 工程</h1>
-              <p className="lead">每个频道都是一个可运行的实战主题：从工具调用、MCP 接入，到后续的 Guardrail、Memory、Workflow 和 Evals。</p>
+              <p className="eyebrow">AI practice community</p>
+              <h1>Awesome AI</h1>
+              <p className="lead">每个频道都是一个可运行的实战主题：从 Agent、Vibe Coding、工具调用、MCP 接入，到后续的 Guardrail、Memory、Workflow 和 Evals。</p>
             </div>
           </section>
 
@@ -160,8 +181,10 @@ export function PracticeApp() {
                 <PanelHeader
                   icon={<Braces size={22} />}
                   title="Function Calling"
-                  description="社区练习帖：从最小工具注册表开始，观察模型选择工具、传参、执行业务函数、返回结构化结果的完整边界。"
+                  description="输入一个客户运营问题，返回客户画像、订单、库存、退款和工单相关的业务判断。"
                 />
+                <TheoryToggle lab="function" loading={theoryLoading === "function"} onLoad={loadTheory} />
+                {theory?.lab === "function" && <TheoryBlock theory={theory} />}
                 <div className="input-dock">
                   <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
                   <button aria-label="运行 Function Calling" onClick={submitFunctionCalling} disabled={loading === "function"}>
@@ -181,8 +204,10 @@ export function PracticeApp() {
                 <PanelHeader
                   icon={<Github size={22} />}
                   title="GitHub MCP 计划模式"
-                  description="社区练习帖：先用 read-only toolsets 读取 GitHub 证据，再输出计划；后续再开放 propose / execute。"
+                  description="输入仓库和任务，返回一份可确认、可审批的开发执行计划。"
                 />
+                <TheoryToggle lab="github" loading={theoryLoading === "github"} onLoad={loadTheory} />
+                {theory?.lab === "github" && <TheoryBlock theory={theory} />}
                 <label className="field-label">Repository</label>
                 <input value={repo} onChange={(event) => setRepo(event.target.value)} />
                 <label className="field-label">Task</label>
@@ -289,6 +314,37 @@ function ResultBlock({ title, data }: { title: string; data: unknown }) {
   );
 }
 
+function TheoryToggle({
+  lab,
+  loading,
+  onLoad,
+}: {
+  lab: LabId;
+  loading: boolean;
+  onLoad: (lab: LabId) => void;
+}) {
+  return (
+    <button className="theory-toggle" type="button" onClick={() => onLoad(lab)} disabled={loading}>
+      <BookOpen size={15} />
+      {loading ? "加载中" : "查看原理"}
+    </button>
+  );
+}
+
+function TheoryBlock({ theory }: { theory: PracticeTheoryResponse }) {
+  return (
+    <div className="theory-panel">
+      <strong>{theory.title}</strong>
+      <p>{theory.summary}</p>
+      <ul>
+        {theory.points.map((point) => (
+          <li key={point}>{point}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function BusinessResultBlock({ result }: { result: FunctionCallResponse }) {
   return (
     <div className="result business-result">
@@ -298,14 +354,7 @@ function BusinessResultBlock({ result }: { result: FunctionCallResponse }) {
           <span key={item}>{item}</span>
         ))}
       </div>
-      <div className="tool-trace">
-        {result.tool_calls.map((call) => (
-          <details key={`${call.name}-${JSON.stringify(call.arguments)}`} open>
-            <summary>{call.name}</summary>
-            <pre>{JSON.stringify({ arguments: call.arguments, result: call.result }, null, 2)}</pre>
-          </details>
-        ))}
-      </div>
+      <ResultBlock title="业务数据" data={result.business_data} />
     </div>
   );
 }
@@ -318,7 +367,7 @@ function PlanBlock({ plan }: { plan: GithubPlanResponse }) {
         {plan.steps.map((step) => (
           <li key={step.id}>
             <strong>{step.title}</strong>
-            <span>{step.mcp_toolset} · {step.risk}</span>
+            <span>{step.risk}</span>
             <p>{step.purpose}</p>
           </li>
         ))}

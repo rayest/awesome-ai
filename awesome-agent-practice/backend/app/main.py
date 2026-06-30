@@ -7,7 +7,7 @@ from app.core.exceptions import register_exception_handlers
 
 
 settings = get_settings()
-app = FastAPI(title="Awesome Agent Practice API", version="0.1.0")
+app = FastAPI(title="Awesome AI API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

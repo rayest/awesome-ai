@@ -11,7 +11,7 @@
 
 后端 API 统一返回 `code`、`message`、`response` 三个顶层字段，业务结果放在 `response` 中。
 
-后续接入 OpenAI Agents SDK 时，可把每个 handler 包装成 `function_tool`。
+真实模型路径使用 OpenAI API 兼容格式，可通过 `OPENAI_BASE_URL` 指向 DeepSeek 等兼容服务。
 
 ## GitHub MCP
 

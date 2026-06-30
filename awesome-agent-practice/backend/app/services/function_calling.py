@@ -3,7 +3,7 @@ from typing import Any
 
 from app.core.config import Settings
 from app.schemas.agent import FunctionCallRequest, FunctionCallResponse, ToolCall
-from app.services.openai_agents_runtime import run_real_function_agent
+from app.services.openai_api_runtime import run_real_function_agent
 from app.tools.function_tools import TOOL_REGISTRY
 
 
@@ -13,14 +13,7 @@ class FunctionCallingService:
 
     async def run(self, request: FunctionCallRequest) -> FunctionCallResponse:
         if request.mode == "openai" and self.settings and self.settings.openai_enabled:
-            answer = await run_real_function_agent(request.prompt, self.settings)
-            return FunctionCallResponse(
-                answer=answer,
-                selected_tool="openai_agents_sdk",
-                tool_calls=[],
-                business_data={"source": "openai_agents_sdk"},
-                recommendations=["打开 trace 后可继续观察真实模型选择了哪些工具。"],
-            )
+            return await run_real_function_agent(request.prompt, self.settings)
 
         planned_calls = self._plan_tool_calls(request.prompt)
         tool_calls: list[ToolCall] = []
@@ -32,10 +25,9 @@ class FunctionCallingService:
             tool_calls.append(ToolCall(name=tool_name, arguments=arguments, result=result))
             business_data[tool_name] = result
 
+        business_data["source"] = "mock"
         return FunctionCallResponse(
             answer=self._format_answer(tool_calls),
-            selected_tool=tool_calls[0].name,
-            tool_calls=tool_calls,
             business_data=business_data,
             recommendations=self._recommend(tool_calls),
         )

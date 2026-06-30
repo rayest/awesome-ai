@@ -1,2 +1,2 @@
-"""Awesome Agent Practice backend."""
+"""Awesome AI backend."""
 

@@ -5,12 +5,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     openai_api_key: str = ""
-    openai_model: str = "gpt-4.1-mini"
+    deepseek_api_key: str = ""
+    openai_model: str = "deepseek-v4-flash"
+    openai_base_url: str = "https://api.deepseek.com"
     github_token: str = ""
     github_mcp_url: str = "https://api.githubcopilot.com/mcp/"
     github_mcp_toolsets: str = "repos,issues,pull_requests,actions"
     github_mcp_readonly: bool = True
-    frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    frontend_origins: str = "http://localhost:18083,http://127.0.0.1:18083"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -20,7 +22,11 @@ class Settings(BaseSettings):
 
     @property
     def openai_enabled(self) -> bool:
-        return bool(self.openai_api_key)
+        return bool(self.provider_api_key)
+
+    @property
+    def provider_api_key(self) -> str:
+        return self.openai_api_key or self.deepseek_api_key
 
     @property
     def github_mcp_enabled(self) -> bool:
@@ -30,4 +36,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
