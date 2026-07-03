@@ -20,7 +20,7 @@ export interface Doc extends DocMetadata {
   content: string
 }
 
-export function getDocSlugs(): { params: { slug: string[] } }[] {
+export function getDocSlugs(): { slug: string[] }[] {
   const slugs: string[][] = []
 
   function walkDir(dir: string, parentSlug: string[] = []) {
@@ -37,7 +37,7 @@ export function getDocSlugs(): { params: { slug: string[] } }[] {
   }
 
   walkDir(docsDirectory)
-  return slugs.map(slug => ({ params: { slug } }))
+  return slugs.map(slug => ({ slug }))
 }
 
 export function getCategories(): string[] {

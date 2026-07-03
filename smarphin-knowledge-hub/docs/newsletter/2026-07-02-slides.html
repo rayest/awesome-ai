@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 邮件情报摘要 - 2026-07-02</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Nunito:wght@400;600;700;800&display=swap');
+    :root {
+      --ink: #050505;
+      --paper: #ffffff;
+      --muted: #666666;
+      --grid: #d8d8d8;
+      --red: #ff3300;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #e9e9e9;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      overflow: hidden;
+    }
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .stage {
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      background: var(--paper);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.18);
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 68px 82px 58px;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s ease;
+      background:
+        linear-gradient(90deg, transparent 0 7.9%, rgba(0,0,0,.08) 8% 8.05%, transparent 8.1% 100%),
+        linear-gradient(0deg, transparent 0 11.9%, rgba(0,0,0,.08) 12% 12.05%, transparent 12.1% 100%),
+        #fff;
+    }
+    .slide.active { visibility: visible; opacity: 1; pointer-events: auto; }
+    .kicker {
+      font: 800 15px/1 "Archivo", sans-serif;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 22px;
+    }
+    h1, h2, h3 {
+      font-family: "Archivo", sans-serif;
+      margin: 0;
+      letter-spacing: -0.035em;
+      text-transform: uppercase;
+    }
+    h1 { font-size: 86px; line-height: .92; max-width: 1120px; }
+    h2 { font-size: 62px; line-height: .95; max-width: 1220px; }
+    h3 { font-size: 30px; line-height: 1; }
+    p { font-size: 23px; line-height: 1.45; margin: 0; color: #1b1b1b; }
+    .meta {
+      position: absolute;
+      right: 82px;
+      top: 68px;
+      text-align: right;
+      font: 800 16px/1.4 "Archivo", sans-serif;
+      letter-spacing: .06em;
+    }
+    .rule { height: 4px; width: 160px; background: var(--red); margin: 34px 0; }
+    .grid-2 { display: grid; grid-template-columns: 1.04fr .96fr; gap: 54px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .card {
+      border: 2px solid var(--ink);
+      padding: 26px;
+      min-height: 154px;
+      background: #fff;
+      position: relative;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      height: 10px;
+      width: 42%;
+      background: var(--red);
+    }
+    .card p { font-size: 20px; color: #202020; }
+    .big-num {
+      font-family: "Archivo", sans-serif;
+      font-size: 86px;
+      font-weight: 900;
+      line-height: .82;
+      color: var(--red);
+    }
+    .footer {
+      position: absolute;
+      left: 82px;
+      right: 82px;
+      bottom: 42px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 2px solid var(--ink);
+      padding-top: 14px;
+      font: 800 14px/1 "Archivo", sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .chart-wrap { border: 2px solid var(--ink); padding: 24px; background: #fff; }
+    svg { display: block; width: 100%; height: auto; }
+    .label { font: 700 17px/1.25 "Nunito", sans-serif; fill: #111; }
+    .small { font: 700 14px/1 "Nunito", sans-serif; fill: #555; }
+    .table {
+      display: grid;
+      border-top: 2px solid #111;
+      border-left: 2px solid #111;
+      font-size: 18px;
+      line-height: 1.24;
+    }
+    .table.cols-4 { grid-template-columns: 1fr .78fr 1.25fr 1.1fr; }
+    .cell {
+      border-right: 2px solid #111;
+      border-bottom: 2px solid #111;
+      padding: 13px 14px;
+      min-height: 62px;
+    }
+    .head { background: #111; color: #fff; font-weight: 900; }
+    .timeline {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-top: 4px solid #111;
+      gap: 0;
+    }
+    .event { padding: 22px 18px 0 0; position: relative; }
+    .event::before {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      background: var(--red);
+      border: 3px solid #111;
+    }
+    .event strong { display: block; font: 900 20px/1 "Archivo", sans-serif; margin-bottom: 8px; }
+    .event span { font-size: 18px; line-height: 1.25; display: block; }
+    .controls {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    button {
+      border: 2px solid #111;
+      background: #fff;
+      font: 800 13px/1 "Archivo", sans-serif;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--red); color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
+  </style>
+</head>
+<body>
+  <main class="viewport">
+    <section class="stage" aria-live="polite">
+      <article class="slide active">
+        <div class="kicker">Swiss Modern · Core Intelligence</div>
+        <div class="meta">2026-07-02<br>AI NEWSLETTER BRIEF</div>
+        <h1>Agent 从自由生成走向可治理执行</h1>
+        <div class="rule"></div>
+        <div class="grid-3" style="margin-top:52px">
+          <div class="card"><div class="big-num">1</div><p>模型竞争转向能力 / 成本比：Sonnet 5 叙事强调 cheaper 与 agentic。</p></div>
+          <div class="card"><div class="big-num">2</div><p>工具机会集中在语音 Agent、数据分析、文档生成、生产级 Agent 框架。</p></div>
+          <div class="card"><div class="big-num">3</div><p>研究侧聚焦 typed config、事务准入、记忆架构与 AI literacy。</p></div>
+        </div>
+        <div class="footer"><span>Core theme from email content</span><span>01 / 06</span></div>
+      </article>
+
+      <article class="slide">
+        <div class="kicker">Model Economics</div>
+        <h2>模型应用：从 tokenmaxxing 到成本效率</h2>
+        <div class="grid-2" style="margin-top:42px">
+          <div class="chart-wrap">
+            <svg viewBox="0 0 760 440" role="img" aria-label="模型应用趋势图">
+              <line x1="80" y1="360" x2="700" y2="360" stroke="#111" stroke-width="4"/>
+              <line x1="80" y1="70" x2="80" y2="360" stroke="#111" stroke-width="4"/>
+              <path d="M105 305 C210 284 260 260 342 216 C440 162 520 133 675 104" fill="none" stroke="#ff3300" stroke-width="10"/>
+              <path d="M105 115 C230 135 320 188 420 232 C520 277 585 311 675 330" fill="none" stroke="#111" stroke-width="8" stroke-dasharray="14 12"/>
+              <text x="106" y="407" class="small">单一 frontier model</text>
+              <text x="430" y="407" class="small">模型组合 / 路由 / 成本治理</text>
+              <text x="100" y="58" class="label">邮件核心信号：企业反思高 token 成本</text>
+              <text x="525" y="100" class="label" fill="#ff3300">效率优先</text>
+              <text x="475" y="300" class="label">无限 token 使用降温</text>
+            </svg>
+          </div>
+          <div>
+            <h3>邮件事实</h3>
+            <p style="margin-top:18px">AI For Work 称 Sonnet 5 更便宜、更 agentic，并把它放在企业 AI 账单膨胀、供应商转向成本效率的背景中。邮件同时提到 OpenAI 据称找到削减推理成本的方法。</p>
+            <div class="card" style="margin-top:26px"><p><strong>分析：</strong>如果属实，未来 AI 产品架构会默认需要模型路由、任务分级、用量账本与实时成本控制。</p></div>
+          </div>
+        </div>
+        <div class="footer"><span>Sonnet 5 / inference cost / model routing</span><span>02 / 06</span></div>
+      </article>
+
+      <article class="slide">
+        <div class="kicker">Product Pain Points</div>
+        <h2>AI 工具不是泛助手，而是具体工作流</h2>
+        <div class="table cols-4" style="margin-top:42px">
+          <div class="cell head">工具 / 产品</div><div class="cell head">邮件信息</div><div class="cell head">解决的痛点</div><div class="cell head">值得关注点</div>
+          <div class="cell">Grok Voice Agents</div><div class="cell">25+ 语言，低延迟电话 Agent</div><div class="cell">真实电话有打断、口音、半截订单号，传统 bot 容错弱</div><div class="cell">验证延迟、合规、转人工与多语言稳定性</div>
+          <div class="cell">Stigg</div><div class="cell">AI 产品 usage runtime</div><div class="cell">AI 用量、额度和成本难以实时控制</div><div class="cell">广告来源，但“用量控制层”需求真实</div>
+          <div class="cell">SupportPages.io</div><div class="cell">从代码库生成帮助中心、截图、视频 walkthrough</div><div class="cell">产品更新快，文档维护滞后</div><div class="cell">看代码理解准确性和发布流程集成</div>
+          <div class="cell">Mastra</div><div class="cell">TS Agent 框架，路由 40+ 模型，workflow / memory / HITL</div><div class="cell">生产级 Agent 需要编排、记忆、人工审批</div><div class="cell">与 Agent 工程化趋势高度相关</div>
+          <div class="cell">DB-GPT</div><div class="cell">连接数据库和文件，写 SQL/Python 并沙箱运行</div><div class="cell">业务用户难以自助分析数据</div><div class="cell">权限、安全沙箱、查询可靠性是关键</div>
+        </div>
+        <div class="footer"><span>Tools mapped to user pain</span><span>03 / 06</span></div>
+      </article>
+
+      <article class="slide">
+        <div class="kicker">Research Findings</div>
+        <h2>Agent 研究的共同方向：约束、验证、记忆</h2>
+        <div class="grid-2" style="margin-top:42px">
+          <div class="chart-wrap">
+            <svg viewBox="0 0 760 460" role="img" aria-label="Agent治理关系图">
+              <rect x="60" y="70" width="210" height="90" fill="#fff" stroke="#111" stroke-width="4"/>
+              <rect x="475" y="70" width="210" height="90" fill="#fff" stroke="#111" stroke-width="4"/>
+              <rect x="265" y="260" width="230" height="95" fill="#ff3300" stroke="#111" stroke-width="4"/>
+              <line x1="270" y1="115" x2="475" y2="115" stroke="#111" stroke-width="4"/>
+              <line x1="165" y1="160" x2="340" y2="260" stroke="#111" stroke-width="4"/>
+              <line x1="580" y1="160" x2="420" y2="260" stroke="#111" stroke-width="4"/>
+              <text x="165" y="108" text-anchor="middle" class="label">模型提案</text>
+              <text x="165" y="135" text-anchor="middle" class="small">LLM / agents</text>
+              <text x="580" y="108" text-anchor="middle" class="label">约束准入</text>
+              <text x="580" y="135" text-anchor="middle" class="small">schema / policy</text>
+              <text x="380" y="304" text-anchor="middle" class="label" fill="#fff">可治理执行</text>
+              <text x="380" y="332" text-anchor="middle" class="small" fill="#fff">log / repair / memory</text>
+            </svg>
+          </div>
+          <div>
+            <h3>邮件事实</h3>
+            <p style="margin-top:18px">arXiv 邮件中，《Making Failure Safe》把 LLM 输出限制为 typed JSON collector configs；《Mnemosyne》把 AI workflow 动作视为未可信提案，需通过确定性约束集；记忆架构论文显示 persistent private notebook 比单纯通道容量更重要。</p>
+            <div class="card" style="margin-top:26px"><p><strong>分析：</strong>生产级 Agent 的核心不再是“让模型更自由”，而是让生成、准入、执行、修复和记忆各司其职。</p></div>
+          </div>
+        </div>
+        <div class="footer"><span>Execution governance</span><span>04 / 06</span></div>
+      </article>
+
+      <article class="slide">
+        <div class="kicker">Evidence Matrix</div>
+        <h2>关键论文数据与产品启发</h2>
+        <div class="table cols-4" style="margin-top:42px">
+          <div class="cell head">主题</div><div class="cell head">数据 / 事实</div><div class="cell head">解释</div><div class="cell head">产品启发</div>
+          <div class="cell">可验证采集 Agent</div><div class="cell">138 tasks；80 source-verified tasks；执行阶段 0 LLM tokens</div><div class="cell">生成层可以降为配置提案层</div><div class="cell">数据采集、爬虫、RPA 要配置化和可验证</div>
+          <div class="cell">Agentic Transaction Processing</div><div class="cell">&lt;6% 投影验证开销；局部修复少一个数量级操作</div><div class="cell">工作流动作需要事务准入和补偿</div><div class="cell">业务 Agent 要有日志、约束和回滚</div>
+          <div class="cell">Epistemic AI Literacy</div><div class="cell">78.8% 非掌握导向；11.1% 高认知参与</div><div class="cell">用户容易把 AI 当答案外包器</div><div class="cell">学习产品要鼓励解释、验证、反思</div>
+          <div class="cell">Agent 记忆架构</div><div class="cell">notebook agent 协调得分 0.867 ± 0.023</div><div class="cell">持久记忆比只加大上下文更稳定</div><div class="cell">多 Agent 系统应沉淀共享约定</div>
+        </div>
+        <div class="footer"><span>Research evidence</span><span>05 / 06</span></div>
+      </article>
+
+      <article class="slide">
+        <div class="kicker">Actionable Priorities</div>
+        <h2>把今天的邮件情报转成行动</h2>
+        <div class="grid-3" style="margin-top:48px">
+          <div class="card"><h3>01</h3><p style="margin-top:16px">为 Agent 加入 schema、权限、约束验证、日志、补偿修复。</p></div>
+          <div class="card"><h3>02</h3><p style="margin-top:16px">把模型成本治理做成默认架构：路由、额度、缓存、降级。</p></div>
+          <div class="card"><h3>03</h3><p style="margin-top:16px">优先试用 Mastra、DB-GPT、SupportPages 这类明确工作流工具。</p></div>
+          <div class="card"><h3>04</h3><p style="margin-top:16px">语音 Agent 先验证延迟、多语言、打断、合规和转人工。</p></div>
+          <div class="card"><h3>05</h3><p style="margin-top:16px">Sonnet 5、Fable 5、Nano Banana 等 newsletter 信息需官方核验。</p></div>
+          <div class="card"><h3>06</h3><p style="margin-top:16px">学习型 AI 产品要减少答案外包，增强解释、验证、反思。</p></div>
+        </div>
+        <div class="footer"><span>Decisions for builders</span><span>06 / 06</span></div>
+      </article>
+    </section>
+  </main>
+  <nav class="controls" aria-label="Slides controls">
+    <button id="prev" type="button">PREV</button>
+    <button id="next" type="button">NEXT</button>
+  </nav>
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let index = 0;
+    function show(nextIndex) {
+      slides[index].classList.remove('active');
+      index = (nextIndex + slides.length) % slides.length;
+      slides[index].classList.add('active');
+    }
+    document.getElementById('prev').addEventListener('click', () => show(index - 1));
+    document.getElementById('next').addEventListener('click', () => show(index + 1));
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === ' ') show(index + 1);
+      if (event.key === 'ArrowLeft') show(index - 1);
+    });
+  </script>
+</body>
+</html>
