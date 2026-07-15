@@ -20,6 +20,61 @@ export interface Doc extends DocMetadata {
   content: string
 }
 
+export interface CategoryInfo {
+  label: string
+  shortCode: string
+  shortDescription: string
+  description: string
+}
+
+const categoryInfo: Record<string, CategoryInfo> = {
+  'claude-code-harness': {
+    label: 'Claude Code Harness',
+    shortCode: 'CC',
+    shortDescription: '架构、记忆、Skills 与 Hooks',
+    description: '围绕 Claude Code 的系统化工程拆解，关注上下文、记忆、自动化与安全边界。',
+  },
+  'harness-engine': {
+    label: 'Harness Engine',
+    shortCode: 'HE',
+    shortDescription: 'Agent 运行时与上下文工程',
+    description: '把 Agent 从提示词扩展到可运行、可拆解、可治理的工程系统。',
+  },
+  newsletter: {
+    label: 'AI 信息流',
+    shortCode: 'AI',
+    shortDescription: '产业动态、工具与研究信号',
+    description: '筛选每日 AI、Agent、模型、平台和产品变化，沉淀可追踪的判断线索。',
+  },
+  'source-to-text': {
+    label: 'Source to Text',
+    shortCode: 'ST',
+    shortDescription: '视频、文章与资料结构化',
+    description: '把外部资料转成可复用的中文结构化笔记，便于后续写作和工程实践。',
+  },
+}
+
+export function getCategoryInfo(category: string): CategoryInfo {
+  return categoryInfo[category] || {
+    label: formatCategoryName(category),
+    shortCode: category.slice(0, 2).toUpperCase(),
+    shortDescription: '知识内容与技术笔记',
+    description: '围绕 AI、Agent 和技术开发的主题内容集合。',
+  }
+}
+
+export function formatCategoryName(category: string): string {
+  return category
+    .split('-')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function getDocSortKey(doc: DocMetadata): string {
+  return doc.slug[doc.slug.length - 1] || doc.title
+}
+
 export function getDocSlugs(): { slug: string[] }[] {
   const slugs: string[][] = []
 
@@ -67,6 +122,7 @@ export function getDocsByCategory(category: string): DocMetadata[] {
         readingTime: rt.text,
       }
     })
+    .sort((a, b) => getDocSortKey(b).localeCompare(getDocSortKey(a)))
 }
 
 export async function getDoc(slug: string[]): Promise<Doc | null> {
@@ -103,10 +159,13 @@ export async function getDoc(slug: string[]): Promise<Doc | null> {
         .replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
       try {
+        if (!hljs.getLanguage(lang)) {
+          return `<pre data-language="${lang}"><code class="hljs language-${lang}">${escapeHtml(decoded)}</code></pre>`
+        }
         const highlighted = hljs.highlight(decoded, { language: lang }).value
         return `<pre data-language="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`
       } catch {
-        return `<pre data-language="${lang}"><code class="hljs">${code}</code></pre>`
+        return `<pre data-language="${lang}"><code class="hljs">${escapeHtml(decoded)}</code></pre>`
       }
     }
   )
@@ -129,4 +188,18 @@ export function getAllDocs(): DocMetadata[] {
   }
 
   return allDocs
+    .sort((a, b) => getDocSortKey(b).localeCompare(getDocSortKey(a)))
+}
+
+export function getLatestDocs(limit = 6): DocMetadata[] {
+  return getAllDocs().slice(0, limit)
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./community.css";
 
 export const metadata: Metadata = {
-  title: "SmartHub - 知识整理与交互学习",
-  description: "个人知识库，学习笔记整理与分享",
+  title: "SmartHub - AI 知识社区",
+  description: "分享 AI、Agent、技术开发框架与相关信息流的知识社区。",
 };
 
 export default function RootLayout({

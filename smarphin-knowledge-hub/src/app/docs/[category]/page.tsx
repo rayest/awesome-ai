@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getCategories, getDocsByCategory } from '@/lib/docs'
+import CommunityShell from '@/components/CommunityShell'
+import { getCategories, getDocsByCategory, getCategoryInfo } from '@/lib/docs'
 
 interface PageProps {
   params: Promise<{ category: string }>
@@ -23,49 +24,44 @@ export default async function CategoryPage({ params }: PageProps) {
   const docs = getDocsByCategory(category)
 
   if (!categories.includes(category)) notFound()
+  const info = getCategoryInfo(category)
 
   return (
-    <div className="layout">
-      <aside className="sidebar">
-        <Link href="/" className="logo" style={{ textDecoration: 'none' }}>SmartHub</Link>
-        <div className="tagline">知识整理 & 交互学习</div>
+    <CommunityShell categories={categories} activeCategory={category} variant="section">
+      <div className="hub-content">
+        <section className="hub-channel-hero">
+          <div className="hub-channel-code">{info.shortCode}</div>
+          <div>
+            <p className="hub-kicker">主题频道</p>
+            <h1>{info.label}</h1>
+            <p>{info.description}</p>
+          </div>
+          <div className="hub-channel-count">
+            <span>{docs.length}</span>
+            <span>篇内容</span>
+          </div>
+        </section>
 
-        <div className="nav-label">主题导航</div>
-        {categories.map((cat) => (
-          <Link
-            key={cat}
-            href={`/docs/${cat}`}
-            className={`nav-item ${cat === category ? 'active' : ''}`}
-          >
-            <span className="nav-number">📁</span>
-            {cat}
-          </Link>
-        ))}
-      </aside>
-      <main className="main">
-        <div className="content-wrapper">
-          <section className="hero">
-            <div className="eyebrow">主题</div>
-            <h1 className="hero-title">{category}</h1>
-            <p className="hero-desc">
-              共 {docs.length} 篇文档
-            </p>
-          </section>
+        <section className="hub-section">
+          <div className="hub-section-header">
+            <h2>全部内容</h2>
+            <p>按更新时间和章节顺序整理，适合系统阅读或按需回查。</p>
+          </div>
 
-          <div className="doc-list">
+          <div className="hub-list">
             {docs.map((doc) => (
               <Link
                 key={doc.slug.join('/')}
                 href={`/docs/${doc.slug.join('/')}`}
-                className="doc-card"
+                className="hub-list-item"
               >
-                <div className="doc-card-title">{doc.title}</div>
-                <div className="doc-card-meta">{doc.readingTime}</div>
+                <span className="hub-list-title">{doc.title}</span>
+                <span className="hub-list-meta">{doc.readingTime}</span>
               </Link>
             ))}
           </div>
-        </div>
-      </main>
-    </div>
+        </section>
+      </div>
+    </CommunityShell>
   )
 }
