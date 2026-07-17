@@ -1,0 +1,4 @@
+import type { MetadataRoute } from 'next'
+import { listArticles, listPodcasts, listTopics } from '@/lib/knowledge'
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> { const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'; const staticPaths = ['', '/articles', '/topics', '/podcasts', '/search', '/community', '/submit', '/about', '/privacy', '/terms']; const [articles, topics, podcasts] = await Promise.all([listArticles(), listTopics(), listPodcasts()]); return [...staticPaths.map((path) => ({ url: `${base}${path}`, lastModified: new Date() })), ...articles.map((item) => ({ url: `${base}/articles/${item.slug}`, lastModified: item.publishedAt ? new Date(item.publishedAt) : new Date() })), ...topics.map((item) => ({ url: `${base}/topics/${item.slug}`, lastModified: new Date() })), ...podcasts.map((item) => ({ url: `${base}/podcasts/${item.slug}`, lastModified: new Date(item.publishedAt) }))] }

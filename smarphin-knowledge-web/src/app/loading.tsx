@@ -1,0 +1,1 @@
+export default function Loading() { return <main className="site-main page-main" aria-label="内容加载中"><div className="loading-title" /><div className="loading-line" /><div className="loading-list">{[1,2,3,4].map((item) => <div key={item} />)}</div></main> }

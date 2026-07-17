@@ -1,0 +1,3 @@
+import { listPodcasts } from '@/lib/knowledge'
+
+export async function GET() { const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'; const items = (await listPodcasts()).filter((item) => item.audioUrl).map((item) => `<item><title>${item.title}</title><link>${base}/podcasts/${item.slug}</link><enclosure url="${item.audioUrl}" type="audio/mpeg" /></item>`).join(''); return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>知序播客</title><link>${base}/podcasts</link>${items}</channel></rss>`, { headers: { 'Content-Type': 'application/rss+xml; charset=utf-8' } }) }

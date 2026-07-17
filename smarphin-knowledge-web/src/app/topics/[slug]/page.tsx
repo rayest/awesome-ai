@@ -1,0 +1,6 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { getTopicBySlug, listTopics } from '@/lib/knowledge'
+
+export async function generateStaticParams() { return (await listTopics()).map((topic) => ({ slug: topic.slug })) }
+export default async function TopicPage({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; const topic = await getTopicBySlug(slug); if (!topic) notFound(); return <main className="site-main topic-page"><Link className="back-link" href="/topics">← 返回全部专题</Link><header className="topic-hero"><div><h1>{topic.title}</h1><p>{topic.summary}</p></div><aside><span>适合谁</span><p>{topic.audience}</p></aside></header><section className="topic-goals"><h2>完成这个专题后</h2><ol>{topic.goals.map((goal) => <li key={goal}>{goal}</li>)}</ol></section><section className="learning-path"><header><h2>编号阅读路径</h2><span>{topic.articleCount} 篇内容</span></header>{topic.articles.map((article, index) => <Link href={`/articles/${article.slug}`} key={article.slug}><span>{String(index + 1).padStart(2, '0')}</span><div><h3>{article.title}</h3><p>{article.summary}</p></div><small>{article.readingMinutes} 分钟</small></Link>)}</section></main> }

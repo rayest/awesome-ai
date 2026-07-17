@@ -1,0 +1,1 @@
+export default function TermsPage() { return <main className="site-main prose-page"><h1>服务条款</h1><p>知序提供经过编辑整理的知识内容，不构成医疗、法律、投资或其他专业建议。</p><h2>内容与来源</h2><p>转载和引用时请保留原始来源。发现事实错误或版权问题，可以通过社群或投稿入口联系我们处理。</p><h2>使用边界</h2><p>不得利用投稿接口发送违法、侵权、恶意或自动化垃圾内容。</p></main> }
