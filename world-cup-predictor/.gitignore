@@ -1,0 +1,10 @@
+.next/
+node_modules/
+out/
+build/
+.playwright-cli/
+output/playwright/*.png
+.DS_Store
+npm-debug.log*
+.vercel
+.env*
