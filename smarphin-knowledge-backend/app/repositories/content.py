@@ -15,7 +15,7 @@ class ContentRepository:
         return (model.status == "published", model.published_at <= datetime.utcnow())
 
     def list_articles(self, page: int, page_size: int, query: str | None = None, featured: bool | None = None):
-        filters = [*self._published(Article), Article.is_deleted.is_(False)]
+        filters = [*self._published(Article), Article.is_deleted.is_(False), Article.category_id.is_not(None)]
         if query:
             term = f"%{query}%"
             filters.append(or_(Article.title.like(term), Article.summary.like(term), Article.content_text.like(term)))
@@ -27,7 +27,7 @@ class ContentRepository:
         return list(items), int(self.session.scalar(count_statement) or 0)
 
     def get_article(self, slug: str) -> Article | None:
-        statement = select(Article).where(Article.slug == slug, *self._published(Article), Article.is_deleted.is_(False))
+        statement = select(Article).where(Article.slug == slug, *self._published(Article), Article.is_deleted.is_(False), Article.category_id.is_not(None))
         return self.session.scalar(statement)
 
     def list_resources(self, page: int, page_size: int, resource_type: str | None = None, platform: str | None = None):
@@ -62,7 +62,7 @@ class ContentRepository:
         statement = (
             select(topic_articles.c.topic_id, func.count(topic_articles.c.article_id))
             .join(Article, Article.id == topic_articles.c.article_id)
-            .where(topic_articles.c.topic_id.in_(topic_ids), *self._published(Article), Article.is_deleted.is_(False))
+            .where(topic_articles.c.topic_id.in_(topic_ids), *self._published(Article), Article.is_deleted.is_(False), Article.category_id.is_not(None))
             .group_by(topic_articles.c.topic_id)
         )
         return {topic_id: count for topic_id, count in self.session.execute(statement)}
@@ -74,7 +74,7 @@ class ContentRepository:
         statement = (
             select(Article)
             .join(topic_articles, topic_articles.c.article_id == Article.id)
-            .where(topic_articles.c.topic_id == topic_id, *self._published(Article), Article.is_deleted.is_(False))
+            .where(topic_articles.c.topic_id == topic_id, *self._published(Article), Article.is_deleted.is_(False), Article.category_id.is_not(None))
             .order_by(topic_articles.c.position, Article.published_at.desc())
         )
         return list(self.session.scalars(statement).all())

@@ -286,10 +286,10 @@ button:active, .primary-button:active { transform: translateY(1px); }
 
 /* 今日情报首页 */
 .site-header-inner { width: min(100% - 72px, 1328px); }
-.site-nav { gap: 24px; }
+.site-nav { gap: 18px; }
 .site-nav .nav-tool { display: inline-flex; align-items: center; gap: 6px; }
 .site-nav .nav-tool svg { color: var(--text-secondary); }
-.site-nav .nav-search { width: 260px; height: 36px; display: inline-flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); }
+.site-nav .nav-search { width: 220px; height: 36px; display: inline-flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); }
 .site-nav .nav-search::after { display: none; }
 .site-nav .nav-search span { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .briefing-home { width: min(100% - 72px, 1328px); }

@@ -40,6 +40,7 @@ class ArticleOut(BaseModel):
     summary: str
     content_markdown: str
     cover_url: str | None
+    category_id: int | None
     status: str
     featured: bool
     published_at: datetime | None

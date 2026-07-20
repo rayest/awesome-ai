@@ -50,6 +50,9 @@ class ArticleWorkflow:
             raise HTTPException(status_code=409, detail=f"不能从 {article.status} 变更为 {target}")
         if target == "scheduled" and not scheduled_at:
             raise HTTPException(status_code=422, detail="定时发布必须设置时间")
+        if target in {"scheduled", "published"} and not article.category_id:
+            logger.warning("文章发布校验未通过：缺少分类，article_id=%s actor_id=%s", article.id, actor_id)
+            raise HTTPException(status_code=422, detail="发布前必须选择内容分类")
         before = {"status": article.status, "scheduled_at": str(article.scheduled_at)}
         article.status = target
         article.scheduled_at = scheduled_at if target == "scheduled" else None

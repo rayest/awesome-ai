@@ -89,16 +89,20 @@ function remoteArticle(item: Record<string, unknown>): ArticleSummary {
   }
 }
 
+function isClassifiedArticle(item: ArticleSummary): boolean {
+  return item.category !== 'uncategorized' && item.categoryLabel !== '未分类'
+}
+
 export async function listArticles(): Promise<ArticleSummary[]> {
   const remote = await apiRequest<{ items: Array<Record<string, unknown>> }>('/articles?page=1&page_size=100')
-  return remote ? remote.items.map(remoteArticle) : []
+  return remote ? remote.items.map(remoteArticle).filter(isClassifiedArticle) : []
 }
 
 export async function searchArticles(query: string): Promise<ArticleSummary[]> {
   const value = query.trim()
   if (!value) return []
   const remote = await apiRequest<{ items: Array<Record<string, unknown>> }>(`/search?q=${encodeURIComponent(value)}&page=1&page_size=50`)
-  if (remote) return remote.items.map(remoteArticle)
+  if (remote) return remote.items.map(remoteArticle).filter(isClassifiedArticle)
   return []
 }
 
@@ -134,6 +138,7 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDetail | nu
   const remote = await apiRequest<Record<string, unknown>>(`/articles/${slug}`)
   if (remote) {
     const summary = remoteArticle(remote)
+    if (!isClassifiedArticle(summary)) return null
     return {
       ...summary, sourceUrl: remote.source_url ? String(remote.source_url) : undefined,
       contentHtml: await renderMarkdown(String(remote.content_markdown || '')),
