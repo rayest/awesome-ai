@@ -1,4 +1,4 @@
-import { AuditOutlined, BookOutlined, DashboardOutlined, FileTextOutlined, InboxOutlined, LinkOutlined, LogoutOutlined, NotificationOutlined, ReadOutlined, RobotOutlined, SoundOutlined, TagsOutlined } from '@ant-design/icons'
+import { AuditOutlined, BookOutlined, CodeOutlined, DashboardOutlined, FileTextOutlined, InboxOutlined, LinkOutlined, LogoutOutlined, NotificationOutlined, ReadOutlined, RobotOutlined, SoundOutlined, TagsOutlined } from '@ant-design/icons'
 import { Button, Layout, Menu, Typography } from 'antd'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
@@ -7,6 +7,9 @@ const items = [
   { key: '/', icon: <DashboardOutlined />, label: '内容工作台' },
   { key: '/leads', icon: <InboxOutlined />, label: '线索池' },
   { key: '/articles', icon: <FileTextOutlined />, label: '文章管理' },
+  { key: '/categories', icon: <TagsOutlined />, label: '分类管理' },
+  { key: '/catalog', icon: <RobotOutlined />, label: '模型与工具' },
+  { key: '/resources', icon: <CodeOutlined />, label: '资源管理' },
   { key: '/topics', icon: <ReadOutlined />, label: '专题与栏目' },
   { key: '/podcasts', icon: <SoundOutlined />, label: '播客管理' },
   { key: '/sources', icon: <LinkOutlined />, label: '来源管理' },
@@ -28,7 +31,7 @@ export function AdminShell() {
         <div className="admin-sider-footer"><Typography.Text>{displayName}</Typography.Text><Button type="text" icon={<LogoutOutlined />} onClick={() => { signOut(); navigate('/login') }}>退出</Button></div>
       </Layout.Sider>
       <Layout>
-        <Layout.Header className="admin-header"><div><TagsOutlined /><span>编辑发布系统</span></div><span className="admin-env">演示环境</span></Layout.Header>
+        <Layout.Header className="admin-header"><div><TagsOutlined /><span>编辑发布系统</span></div><span className="admin-env">MySQL 实时数据</span></Layout.Header>
         <Layout.Content className="admin-content"><Outlet /></Layout.Content>
       </Layout>
     </Layout>

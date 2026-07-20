@@ -55,6 +55,9 @@ const categoryInfo: Record<string, CategoryInfo> = {
     shortDescription: '视频、文章与资料结构化',
     description: '把外部资料转成可复用的中文结构化笔记，便于后续写作和工程实践。',
   },
+  cases: { label: '实践案例', shortCode: 'CA', shortDescription: '可复现的 AI 应用实践', description: '记录任务、工具、成本、结果与可以复用的方法。' },
+  evaluations: { label: '评测与基准', shortCode: 'EV', shortDescription: '模型与工具的统一条件实测', description: '保留测试环境、日期、成本和质量结果。' },
+  failures: { label: '失败复盘', shortCode: 'FR', shortDescription: '幻觉、失控与工程陷阱', description: '整理失败原因、影响范围和可执行的防范方法。' },
 }
 
 export function getCategoryInfo(category: string): CategoryInfo {
@@ -172,14 +175,29 @@ export async function getDoc(slug: string[]): Promise<Doc | null> {
   const rt = readingTime(content)
 
   // Use remark with GFM (GitHub Flavored Markdown) support
+  let contentHtml = await renderMarkdown(content)
+
+  contentHtml = contentHtml.replace(/src="\.\/([^\"]+)"/g, `src="/content/${slug[0]}/$1"`)
+
+  return {
+    slug,
+    title: data.title || extractTitle(content, slug[slug.length - 1]),
+    category: slug[0],
+    content: contentHtml,
+    readingTime: rt.text,
+    summary: data.summary || extractSummary(content),
+    publishedAt: data.publishedAt || extractDate(slug[slug.length - 1]),
+    coverUrl: data.cover || extractCover(content, slug[0]),
+  }
+}
+
+export async function renderMarkdown(content: string): Promise<string> {
   const processedContent = await remark()
     .use(remarkGfm)
     .use(remarkHtml, { sanitize: false })
     .process(content)
 
   let contentHtml = processedContent.toString()
-
-  contentHtml = contentHtml.replace(/src="\.\/([^\"]+)"/g, `src="/content/${slug[0]}/$1"`)
 
   // Apply syntax highlighting to code blocks
   contentHtml = contentHtml.replace(
@@ -202,16 +220,7 @@ export async function getDoc(slug: string[]): Promise<Doc | null> {
     }
   )
 
-  return {
-    slug,
-    title: data.title || extractTitle(content, slug[slug.length - 1]),
-    category: slug[0],
-    content: contentHtml,
-    readingTime: rt.text,
-    summary: data.summary || extractSummary(content),
-    publishedAt: data.publishedAt || extractDate(slug[slug.length - 1]),
-    coverUrl: data.cover || extractCover(content, slug[0]),
-  }
+  return contentHtml
 }
 
 export function getAllDocs(): DocMetadata[] {

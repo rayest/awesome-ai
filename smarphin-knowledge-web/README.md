@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smarphin Knowledge Web（知序）
 
-## Getting Started
+编辑驱动的 AI 知识门户，基于 Next.js 16、React 19 和 App Router。
 
-First, run the development server:
+## 功能
+
+- 文章列表、分类筛选、详情与相关阅读
+- 专题目录和编号阅读路径
+- 全文搜索
+- 播客、播放器、文章 RSS 与 Podcast RSS
+- 匿名投稿、社群入口、Sitemap 和基础站点页面
+- 统一 MySQL 数据源，通过公共 API 实时读取已发布内容
+
+## 本地启动
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+默认访问 `http://localhost:19092`。端口通过 `.env` 的 `PORT=19092` 固定配置。生产构建使用：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+也可以在 `awesome-ai` 目录执行 `./start-knowledge-client.sh`，一键启动公共 API `19093` 和客户端 Web `19092`。
 
-## Learn More
+## 数据源
 
-To learn more about Next.js, take a look at the following resources:
+客户端只读取 `KNOWLEDGE_API_URL` 指向的公共后端。公共后端与管理后端必须连接同一个 MySQL 数据库；API 不可用时显示错误状态，不回退本地 Markdown。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+投稿由浏览器请求 `NEXT_PUBLIC_KNOWLEDGE_API_URL`。生产环境需要同步配置公共后端 CORS。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 内容和运营配置
 
-## Deploy on Vercel
+- 本地文章：`docs/<category>/*.md`
+- 本地图片：`public/content/<category>/`
+- 微信、飞书和 Telegram 社群入口通过 `.env.example` 中对应变量配置。
+- 播客需要在管理端发布真实 `audio_url`，发布后播放器与 Podcast RSS 自动生效。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 验证
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```

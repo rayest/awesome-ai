@@ -14,9 +14,18 @@ router = APIRouter(prefix="/api/admin/articles", tags=["articles"])
 
 
 @router.get("")
-def list_articles(page_number: int = Query(1, alias="page", ge=1), page_size: int = Query(20, ge=1, le=100), status: str | None = None, session: Session = Depends(get_db), _: AdminAccount = Depends(current_admin)):
-    items, total = AdminRepository(session).list_articles(page_number, page_size, status)
+def list_articles(page_number: int = Query(1, alias="page", ge=1), page_size: int = Query(20, ge=1, le=100), status: str | None = None, q: str | None = None, session: Session = Depends(get_db), _: AdminAccount = Depends(current_admin)):
+    items, total = AdminRepository(session).list_articles(page_number, page_size, status, q)
     return page([ArticleOut.model_validate(item).model_dump() for item in items], total, page_number, page_size)
+
+
+@router.get("/{article_id}")
+def get_article(article_id: int, session: Session = Depends(get_db), _: AdminAccount = Depends(current_admin)):
+    item = AdminRepository(session).get_article(article_id)
+    if not item or item.is_deleted:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="文章不存在")
+    return success(ArticleOut.model_validate(item).model_dump())
 
 
 @router.post("", status_code=201)

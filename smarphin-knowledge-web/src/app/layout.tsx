@@ -5,6 +5,9 @@ import "./site.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
+// 内容来自实时 API，不在构建阶段固化数据库快照。
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: { default: "知序 - AI 知识社区", template: "%s - 知序" },

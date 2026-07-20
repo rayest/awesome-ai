@@ -75,6 +75,56 @@ class Article(Base, TimestampMixin):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class LibraryResource(Base, TimestampMixin):
+    __tablename__ = "knowledge_resources"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(220), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(300), index=True)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    resource_type: Mapped[str] = mapped_column(String(64), index=True)
+    platform: Mapped[str] = mapped_column(String(160), default="通用", index=True)
+    difficulty: Mapped[str] = mapped_column(String(32), default="入门")
+    file_format: Mapped[str] = mapped_column(String(32), default="Markdown")
+    content: Mapped[str] = mapped_column(Text, default="")
+    instructions: Mapped[str] = mapped_column(Text, default="")
+    variables: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[str] = mapped_column(String(40), default="1.0.0")
+    requires_api_key: Mapped[bool] = mapped_column(Boolean, default=False)
+    featured: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(32), default="draft", index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("admin_accounts.id"), nullable=True)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("admin_accounts.id"), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CatalogProfile(Base, TimestampMixin):
+    __tablename__ = "knowledge_catalog_profiles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(220), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(240), index=True)
+    profile_type: Mapped[str] = mapped_column(String(32), index=True)
+    provider: Mapped[str] = mapped_column(String(160), default="")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    pricing: Mapped[str] = mapped_column(String(240), default="未标注")
+    availability: Mapped[str] = mapped_column(String(240), default="未标注")
+    context_window: Mapped[str] = mapped_column(String(120), default="未标注")
+    capabilities: Mapped[str] = mapped_column(Text, default="")
+    best_for: Mapped[str] = mapped_column(Text, default="")
+    limitations: Mapped[str] = mapped_column(Text, default="")
+    latest_change: Mapped[str] = mapped_column(Text, default="")
+    website_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    api_available: Mapped[bool] = mapped_column(Boolean, default=False)
+    open_source: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(32), default="draft", index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("admin_accounts.id"), nullable=True)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("admin_accounts.id"), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class Source(Base, TimestampMixin):
     __tablename__ = "knowledge_sources"
     id: Mapped[int] = mapped_column(primary_key=True)

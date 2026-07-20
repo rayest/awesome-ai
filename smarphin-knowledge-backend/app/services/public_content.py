@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from app.repositories.content import ContentRepository
 from app.core.config import get_settings
-from app.schemas.public import ArticleOut, PodcastOut, SubmissionCreate, TopicOut
+from app.schemas.public import ArticleOut, CatalogProfileOut, PodcastOut, ResourceOut, SubmissionCreate, TopicDetailOut, TopicOut
 
 logger = logging.getLogger(__name__)
 
@@ -17,22 +17,55 @@ class PublicContentService:
 
     def articles(self, page: int, page_size: int, query: str | None = None, featured: bool | None = None):
         items, total = self.repository.list_articles(page, page_size, query, featured)
-        return [ArticleOut.model_validate(item).model_dump() for item in items], total
+        return self._article_payloads(items), total
 
     def article(self, slug: str) -> dict:
         item = self.repository.get_article(slug)
         if not item:
             raise HTTPException(status_code=404, detail="内容不存在")
-        return ArticleOut.model_validate(item).model_dump()
+        return self._article_payloads([item])[0]
+
+    def resources(self, page: int, page_size: int, resource_type: str | None = None, platform: str | None = None):
+        items, total = self.repository.list_resources(page, page_size, resource_type, platform)
+        return [ResourceOut.model_validate(item).model_dump(exclude={"content", "instructions", "variables"}) for item in items], total
+
+    def resource(self, slug: str) -> dict:
+        item = self.repository.get_resource(slug)
+        if not item:
+            raise HTTPException(status_code=404, detail="资源不存在")
+        return ResourceOut.model_validate(item).model_dump()
+
+    def profiles(self, profile_type: str):
+        return [CatalogProfileOut.model_validate(item).model_dump() for item in self.repository.list_profiles(profile_type)]
+
+    def _article_payloads(self, items) -> list[dict]:
+        categories = self.repository.get_categories({item.category_id for item in items if item.category_id})
+        payloads = []
+        for item in items:
+            payload = ArticleOut.model_validate(item).model_dump()
+            category = categories.get(item.category_id)
+            payload["category_slug"] = category.slug if category else None
+            payload["category_name"] = category.name if category else None
+            payloads.append(payload)
+        return payloads
 
     def topics(self) -> list[dict]:
-        return [TopicOut.model_validate(item).model_dump() for item in self.repository.list_topics()]
+        items = self.repository.list_topics()
+        counts = self.repository.topic_article_counts([item.id for item in items])
+        payloads = []
+        for item in items:
+            payload = TopicOut.model_validate(item).model_dump()
+            payload["article_count"] = counts.get(item.id, 0)
+            payloads.append(payload)
+        return payloads
 
     def topic(self, slug: str) -> dict:
         item = self.repository.get_topic(slug)
         if not item:
             raise HTTPException(status_code=404, detail="专题不存在")
-        return TopicOut.model_validate(item).model_dump()
+        payload = TopicOut.model_validate(item).model_dump()
+        payload["articles"] = self._article_payloads(self.repository.list_topic_articles(item.id))
+        return TopicDetailOut.model_validate(payload).model_dump()
 
     def podcasts(self) -> list[dict]:
         return [PodcastOut.model_validate(item).model_dump() for item in self.repository.list_podcasts()]

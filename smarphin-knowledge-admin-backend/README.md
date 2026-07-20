@@ -1,5 +1,11 @@
 # Smarphin Knowledge Admin API
 
+在 `awesome-ai/` 目录一键启动管理端前后端：
+
+```bash
+./start-knowledge-admin.sh
+```
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate

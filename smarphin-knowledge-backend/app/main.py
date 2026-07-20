@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request
@@ -9,9 +10,12 @@ from fastapi.responses import JSONResponse
 from app.api.feeds import router as feeds_router
 from app.api.public import router as public_router
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 settings = get_settings()
+configure_logging(settings)
+logger = logging.getLogger(__name__)
+logger.info("客户端日志系统初始化完成，log_dir=%s log_file=%s", settings.log_dir, settings.log_file)
 app = FastAPI(title=settings.app_name, version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=True, allow_methods=["GET", "POST"], allow_headers=["*"])
 app.include_router(public_router)
@@ -21,14 +25,35 @@ app.include_router(feeds_router)
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-    response = await call_next(request)
+    started_at = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (time.perf_counter() - started_at) * 1000
+        logger.exception(
+            "客户端接口请求异常，request_id=%s method=%s path=%s duration_ms=%.2f",
+            request_id,
+            request.method,
+            request.url.path,
+            duration_ms,
+        )
+        raise
     response.headers["X-Request-ID"] = request_id
+    duration_ms = (time.perf_counter() - started_at) * 1000
+    logger.info(
+        "客户端接口请求完成，request_id=%s method=%s path=%s status=%s duration_ms=%.2f",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
     return response
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception(request: Request, exc: Exception):
-    logging.getLogger(__name__).exception("公共接口发生未处理异常，path=%s", request.url.path)
+    logger.exception("公共接口发生未处理异常，path=%s", request.url.path)
     return JSONResponse(status_code=500, content={"code": 50000, "message": "服务暂时不可用", "response": None})
 
 

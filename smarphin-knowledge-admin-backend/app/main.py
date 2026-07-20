@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 from pathlib import Path
 
@@ -10,21 +11,28 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.articles import router as articles_router
 from app.api.auth import router as auth_router
+from app.api.catalog import router as catalog_router
+from app.api.content_management import router as content_management_router
 from app.api.dashboard import router as dashboard_router
 from app.api.leads import router as leads_router
-from app.api.resources import router as resources_router
+from app.api.library_resources import router as library_resources_router
 from app.api.uploads import router as uploads_router
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 settings = get_settings()
+configure_logging(settings)
+logger = logging.getLogger(__name__)
+logger.info("管理端日志系统初始化完成，log_dir=%s log_file=%s", settings.log_dir, settings.log_file)
 app = FastAPI(title=settings.app_name, version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(auth_router)
+app.include_router(catalog_router)
+app.include_router(content_management_router)
 app.include_router(dashboard_router)
 app.include_router(articles_router)
 app.include_router(leads_router)
-app.include_router(resources_router)
+app.include_router(library_resources_router)
 app.include_router(uploads_router)
 Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.upload_dir), name="media")
@@ -33,14 +41,35 @@ app.mount("/media", StaticFiles(directory=settings.upload_dir), name="media")
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-    response = await call_next(request)
+    started_at = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (time.perf_counter() - started_at) * 1000
+        logger.exception(
+            "管理接口请求异常，request_id=%s method=%s path=%s duration_ms=%.2f",
+            request_id,
+            request.method,
+            request.url.path,
+            duration_ms,
+        )
+        raise
     response.headers["X-Request-ID"] = request_id
+    duration_ms = (time.perf_counter() - started_at) * 1000
+    logger.info(
+        "管理接口请求完成，request_id=%s method=%s path=%s status=%s duration_ms=%.2f",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
     return response
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception(request: Request, exc: Exception):
-    logging.getLogger(__name__).exception("管理接口发生未处理异常，path=%s", request.url.path)
+    logger.exception("管理接口发生未处理异常，path=%s", request.url.path)
     return JSONResponse(status_code=500, content={"code": 50000, "message": "服务暂时不可用", "response": None})
 
 

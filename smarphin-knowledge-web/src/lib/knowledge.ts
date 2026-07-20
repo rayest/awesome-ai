@@ -1,4 +1,4 @@
-import { getAllDocs, getCategories, getCategoryInfo, getDoc, type DocMetadata } from './docs'
+import { renderMarkdown } from './docs'
 
 export interface ArticleSummary {
   slug: string
@@ -35,112 +35,148 @@ export interface PodcastSummary {
   duration: string
   publishedAt: string
   audioUrl: string | null
+  showNotesHtml?: string
+  chapters?: Array<{ time: string; title: string }>
 }
+
+export interface ResourceSummary {
+  slug: string
+  title: string
+  summary: string
+  resourceType: string
+  platform: string
+  difficulty: string
+  fileFormat: string
+  version: string
+  requiresApiKey: boolean
+  featured: boolean
+  publishedAt: string | null
+  verifiedAt: string | null
+}
+
+export interface ResourceDetail extends ResourceSummary {
+  content: string
+  instructions: string
+  variables: string
+}
+
+export interface CatalogProfile { slug:string; name:string; profileType:'model'|'tool'; provider:string; summary:string; pricing:string; availability:string; contextWindow:string; capabilities:string; bestFor:string; limitations:string; latestChange:string; websiteUrl:string|null; apiAvailable:boolean; openSource:boolean; verifiedAt:string|null }
 
 const apiUrl = process.env.KNOWLEDGE_API_URL || 'http://localhost:8101/api/public'
-const dataSource = process.env.KNOWLEDGE_DATA_SOURCE || 'filesystem'
 
-function publicSlug(doc: DocMetadata): string {
-  return doc.slug.join('--')
-}
-
-function toLocalArticle(doc: DocMetadata): ArticleSummary {
-  const minutes = Number.parseInt(doc.readingTime, 10) || 5
-  return {
-    slug: publicSlug(doc),
-    legacySlug: doc.slug,
-    title: doc.title,
-    summary: doc.summary,
-    category: doc.category,
-    categoryLabel: getCategoryInfo(doc.category).label,
-    readingMinutes: minutes,
-    publishedAt: doc.publishedAt,
-    coverUrl: doc.coverUrl,
-    sourceName: doc.category === 'newsletter' ? '知序编辑部' : '公开资料整理',
-    sourceVerified: true,
+async function apiRequest<T>(path: string): Promise<T | null> {
+  try {
+    const response = await fetch(`${apiUrl}${path}`, { next: { revalidate: 300 } })
+    if (!response.ok) {
+      if (response.status === 404) return null
+      throw new Error(`公共知识 API 请求失败，path=${path}，status=${response.status}`)
+    }
+    const payload = await response.json()
+    return payload.response as T
+  } catch (error) {
+    console.error(`公共知识 API 连接异常，path=${path}`, error)
+    throw error
   }
 }
 
-async function apiRequest<T>(path: string): Promise<T | null> {
-  if (dataSource !== 'api') return null
-  try {
-    const response = await fetch(`${apiUrl}${path}`, { next: { revalidate: 300 } })
-    if (!response.ok) return null
-    const payload = await response.json()
-    return payload.response as T
-  } catch {
-    return null
+function remoteArticle(item: Record<string, unknown>): ArticleSummary {
+  return {
+    slug: String(item.slug), legacySlug: [], title: String(item.title), summary: String(item.summary || ''),
+    category: String(item.category_slug || 'uncategorized'), categoryLabel: String(item.category_name || '未分类'),
+    readingMinutes: Number(item.reading_minutes || 5), publishedAt: item.published_at ? String(item.published_at).slice(0, 10) : null,
+    coverUrl: item.cover_url ? String(item.cover_url) : null, sourceName: String(item.source_name || '知序编辑部'),
+    sourceVerified: Boolean(item.source_verified),
   }
 }
 
 export async function listArticles(): Promise<ArticleSummary[]> {
   const remote = await apiRequest<{ items: Array<Record<string, unknown>> }>('/articles?page=1&page_size=100')
-  if (remote) {
-    return remote.items.map((item) => ({
-      slug: String(item.slug), legacySlug: [], title: String(item.title), summary: String(item.summary || ''),
-      category: 'article', categoryLabel: 'AI 知识', readingMinutes: Number(item.reading_minutes || 5),
-      publishedAt: item.published_at ? String(item.published_at) : null, coverUrl: item.cover_url ? String(item.cover_url) : null,
-      sourceName: String(item.source_name || '知序编辑部'), sourceVerified: Boolean(item.source_verified),
-    }))
+  return remote ? remote.items.map(remoteArticle) : []
+}
+
+export async function searchArticles(query: string): Promise<ArticleSummary[]> {
+  const value = query.trim()
+  if (!value) return []
+  const remote = await apiRequest<{ items: Array<Record<string, unknown>> }>(`/search?q=${encodeURIComponent(value)}&page=1&page_size=50`)
+  if (remote) return remote.items.map(remoteArticle)
+  return []
+}
+
+function remoteResource(item: Record<string, unknown>): ResourceSummary {
+  return {
+    slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''),
+    resourceType: String(item.resource_type || 'product_content'), platform: String(item.platform || '通用'),
+    difficulty: String(item.difficulty || '入门'), fileFormat: String(item.file_format || 'Markdown'),
+    version: String(item.version || '1.0.0'), requiresApiKey: Boolean(item.requires_api_key), featured: Boolean(item.featured),
+    publishedAt: item.published_at ? String(item.published_at).slice(0, 10) : null,
+    verifiedAt: item.verified_at ? String(item.verified_at).slice(0, 10) : null,
   }
-  return getAllDocs().map(toLocalArticle)
+}
+
+export async function listResources(resourceType?: string): Promise<ResourceSummary[]> {
+  const query = resourceType ? `&resource_type=${encodeURIComponent(resourceType)}` : ''
+  const remote = await apiRequest<{ items: Array<Record<string, unknown>> }>(`/resources?page=1&page_size=100${query}`)
+  return remote ? remote.items.map(remoteResource) : []
+}
+
+export async function getResourceBySlug(slug: string): Promise<ResourceDetail | null> {
+  const remote = await apiRequest<Record<string, unknown>>(`/resources/${slug}`)
+  if (!remote) return null
+  return { ...remoteResource(remote), content: String(remote.content || ''), instructions: String(remote.instructions || ''), variables: String(remote.variables || '') }
+}
+
+export async function listCatalogProfiles(profileType: 'model' | 'tool'): Promise<CatalogProfile[]> {
+  const remote = await apiRequest<Array<Record<string, unknown>>>(`/catalog/${profileType}`)
+  return remote ? remote.map((item) => ({ slug:String(item.slug), name:String(item.name), profileType, provider:String(item.provider||''), summary:String(item.summary||''), pricing:String(item.pricing||'未标注'), availability:String(item.availability||'未标注'), contextWindow:String(item.context_window||'未标注'), capabilities:String(item.capabilities||''), bestFor:String(item.best_for||''), limitations:String(item.limitations||''), latestChange:String(item.latest_change||''), websiteUrl:item.website_url?String(item.website_url):null, apiAvailable:Boolean(item.api_available), openSource:Boolean(item.open_source), verifiedAt:item.verified_at?String(item.verified_at).slice(0,10):null })) : []
 }
 
 export async function getArticleBySlug(slug: string): Promise<ArticleDetail | null> {
   const remote = await apiRequest<Record<string, unknown>>(`/articles/${slug}`)
   if (remote) {
+    const summary = remoteArticle(remote)
     return {
-      slug, legacySlug: [], title: String(remote.title), summary: String(remote.summary || ''), category: 'article', categoryLabel: 'AI 知识',
-      readingMinutes: Number(remote.reading_minutes || 5), publishedAt: remote.published_at ? String(remote.published_at) : null,
-      coverUrl: remote.cover_url ? String(remote.cover_url) : null, sourceName: String(remote.source_name || '知序编辑部'),
-      sourceVerified: Boolean(remote.source_verified), sourceUrl: remote.source_url ? String(remote.source_url) : undefined,
-      contentHtml: markdownToBasicHtml(String(remote.content_markdown || '')),
+      ...summary, sourceUrl: remote.source_url ? String(remote.source_url) : undefined,
+      contentHtml: await renderMarkdown(String(remote.content_markdown || '')),
     }
   }
-  const parts = slug.split('--')
-  const doc = await getDoc(parts)
-  if (!doc) return null
-  let contentHtml = doc.content.replace(/^<h1>[\s\S]*?<\/h1>/, '')
-  if (doc.coverUrl) {
-    const escapedUrl = doc.coverUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    contentHtml = contentHtml.replace(new RegExp(`<p><img[^>]+src="${escapedUrl}"[^>]*><\\/p>`), '')
-  }
-  return { ...toLocalArticle(doc), contentHtml }
+  return null
 }
 
 export async function listTopics(): Promise<TopicSummary[]> {
-  const articles = await listArticles()
-  return getCategories().map((category) => {
-    const info = getCategoryInfo(category)
-    return {
-      slug: category, title: info.label, summary: info.description,
-      audience: category === 'newsletter' ? '希望快速了解 AI 变化并形成判断的产品与技术团队' : '希望系统理解 Agent 与上下文工程的开发者',
-      goals: ['建立主题地图', '按顺序完成核心阅读', '回到实践中验证方法'],
-      articleCount: articles.filter((article) => article.category === category).length,
-    }
-  })
+  const remote = await apiRequest<Array<Record<string, unknown>>>('/topics')
+  return remote ? remote.map((item) => ({
+    slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), audience: String(item.audience || ''),
+    goals: parseGoals(item.goals), articleCount: Number(item.article_count || 0),
+  })) : []
 }
 
 export async function getTopicBySlug(slug: string): Promise<(TopicSummary & { articles: ArticleSummary[] }) | null> {
-  const topics = await listTopics()
-  const topic = topics.find((item) => item.slug === slug)
-  if (!topic) return null
-  return { ...topic, articles: (await listArticles()).filter((article) => article.category === slug) }
+  const remote = await apiRequest<Record<string, unknown>>(`/topics/${slug}`)
+  if (remote) {
+    const articles = Array.isArray(remote.articles) ? remote.articles.map((item) => remoteArticle(item as Record<string, unknown>)) : []
+    return { slug: String(remote.slug), title: String(remote.title), summary: String(remote.summary || ''), audience: String(remote.audience || ''), goals: parseGoals(remote.goals), articleCount: articles.length, articles }
+  }
+  return null
 }
 
 export async function listPodcasts(): Promise<PodcastSummary[]> {
   const remote = await apiRequest<Array<Record<string, unknown>>>('/podcasts')
-  if (remote) return remote.map((item) => ({ slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), duration: formatDuration(Number(item.duration_seconds || 0)), publishedAt: String(item.published_at || ''), audioUrl: item.audio_url ? String(item.audio_url) : null }))
-  return [
-    { slug: 'agent-memory-field-notes', title: '从上下文窗口到长期记忆：Agent 记忆工程现场笔记', summary: '沿着短期上下文、检索记忆和更新审计，解释一个可治理的记忆系统如何形成。', duration: '18:42', publishedAt: '2026-07-17', audioUrl: null },
-    { slug: 'loop-engineering-notes', title: 'Loop Engineering：停止条件为什么比提示词更重要', summary: '讨论反馈信号、恢复策略与长任务可靠性。', duration: '14:16', publishedAt: '2026-07-12', audioUrl: null },
-  ]
+  return remote ? Promise.all(remote.map(async (item) => ({ slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), duration: formatDuration(Number(item.duration_seconds || 0)), publishedAt: String(item.published_at || '').slice(0, 10), audioUrl: item.audio_url ? String(item.audio_url) : null, showNotesHtml: item.show_notes ? await renderMarkdown(String(item.show_notes)) : undefined, chapters: parseChapters(item.chapters) }))) : []
+}
+
+function parseGoals(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String)
+  const text = String(value || '').trim()
+  if (!text) return []
+  try { const parsed = JSON.parse(text); if (Array.isArray(parsed)) return parsed.map(String) } catch { /* 使用换行格式 */ }
+  return text.split(/\r?\n/).map((item) => item.replace(/^[-*\d.\s]+/, '').trim()).filter(Boolean)
+}
+
+function parseChapters(value: unknown): Array<{ time: string; title: string }> | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.map((item) => ({ time: String((item as Record<string, unknown>).time || ''), title: String((item as Record<string, unknown>).title || '') })).filter((item) => item.title)
 }
 
 function formatDuration(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-}
-
-function markdownToBasicHtml(markdown: string): string {
-  return markdown.split('\n').map((line) => line.startsWith('# ') ? `<h1>${line.slice(2)}</h1>` : line.startsWith('## ') ? `<h2>${line.slice(3)}</h2>` : line ? `<p>${line}</p>` : '').join('')
 }

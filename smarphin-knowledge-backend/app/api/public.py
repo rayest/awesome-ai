@@ -40,6 +40,22 @@ def search(q: str = Query(min_length=1, max_length=120), page_number: int = Quer
     return page(items, total, page_number, page_size)
 
 
+@router.get("/resources")
+def resources(page_number: int = Query(1, alias="page", ge=1), page_size: int = Query(20, ge=1, le=100), resource_type: str | None = None, platform: str | None = None, service: PublicContentService = Depends(get_service)):
+    items, total = service.resources(page_number, page_size, resource_type, platform)
+    return page(items, total, page_number, page_size)
+
+
+@router.get("/resources/{slug}")
+def resource(slug: str, service: PublicContentService = Depends(get_service)):
+    return success(service.resource(slug))
+
+@router.get("/catalog/{profile_type}")
+def catalog(profile_type: str, service: PublicContentService = Depends(get_service)):
+    if profile_type not in {"model", "tool"}: return success([])
+    return success(service.profiles(profile_type))
+
+
 @router.get("/topics")
 def topics(service: PublicContentService = Depends(get_service)):
     return success(service.topics())
