@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 300" role="img" aria-label="World Cup champions trophy">
+  <defs>
+    <radialGradient id="shine" cx=".38" cy=".2" r=".72">
+      <stop offset="0" stop-color="#fff7b7"/>
+      <stop offset=".38" stop-color="#ffd36a"/>
+      <stop offset=".78" stop-color="#b87320"/>
+      <stop offset="1" stop-color="#5b3510"/>
+    </radialGradient>
+    <linearGradient id="base" x1="0" x2="1">
+      <stop offset="0" stop-color="#5b3510"/>
+      <stop offset=".5" stop-color="#ffd36a"/>
+      <stop offset="1" stop-color="#5b3510"/>
+    </linearGradient>
+    <filter id="gold-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="276" rx="78" ry="16" fill="#06111f" opacity=".45"/>
+  <path d="M74 251h92l15 26H59l15-26Z" fill="url(#base)" stroke="#fff0a8" stroke-width="3"/>
+  <path d="M89 214h62l11 39H78l11-39Z" fill="url(#shine)" stroke="#fff0a8" stroke-width="3"/>
+  <path d="M108 147h24l18 70H90l18-70Z" fill="url(#shine)" stroke="#fff0a8" stroke-width="3"/>
+  <path d="M120 25c47 0 78 34 68 77-7 31-34 55-68 55s-61-24-68-55c-10-43 21-77 68-77Z" fill="url(#shine)" stroke="#fff0a8" stroke-width="4" filter="url(#gold-glow)"/>
+  <path d="M71 73c-33 5-45 27-37 52 7 21 26 32 51 30" fill="none" stroke="#ffd36a" stroke-width="16" stroke-linecap="round"/>
+  <path d="M169 73c33 5 45 27 37 52-7 21-26 32-51 30" fill="none" stroke="#ffd36a" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="99" cy="80" r="18" fill="#fff4ab" opacity=".75"/>
+  <circle cx="136" cy="88" r="24" fill="#8c5618" opacity=".28"/>
+  <path d="M94 133c22 14 45 14 67-2" fill="none" stroke="#704915" stroke-width="7" stroke-linecap="round" opacity=".45"/>
+</svg>
