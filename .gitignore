@@ -6,3 +6,13 @@
 **/node_modules
 **/.next/
 **/.velite/
+**/.agents/
+**/.claude/
+**/.codebuddy/
+**/.lingma/
+**/.qoder/
+**/.qwen/
+**/.trae/
+**/.windsurf/
+**/.zcode/
+**/skills/
