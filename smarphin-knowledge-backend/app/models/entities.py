@@ -82,13 +82,13 @@ class CatalogProfile(Base, TimestampMixin):
 
 class Topic(Base, TimestampMixin):
     __tablename__ = "knowledge_topics"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(160), unique=True, index=True)
     title: Mapped[str] = mapped_column(String(240))
     summary: Mapped[str] = mapped_column(Text, default="")
     audience: Mapped[str] = mapped_column(Text, default="")
     goals: Mapped[str] = mapped_column(Text, default="")
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", index=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

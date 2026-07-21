@@ -31,7 +31,7 @@ export interface Article {
 export type ArticleInput = Pick<Article, 'slug'|'title'|'summary'|'content_markdown'|'featured'|'source_verified'> & Partial<Pick<Article,'cover_url'|'category_id'|'source_name'|'source_url'>>
 
 export interface Category { id:number; slug:string; name:string; description:string }
-export interface Topic { id:number; slug:string; title:string; summary:string; audience:string; goals:string; article_ids:number[]; status:string; updated_at:string }
+export interface Topic { id:number; slug:string; title:string; summary:string; audience:string; goals:string; cover_url?:string; article_ids:number[]; status:string; updated_at:string }
 export interface Podcast { id:number; slug:string; title:string; summary:string; show_notes:string; chapters:Array<{time:string;title:string}>; cover_url?:string; audio_url:string; duration_seconds:number; status:string; updated_at:string }
 export interface Source { id:number; name:string; source_type:string; url:string; rss_url?:string; is_active:boolean; updated_at:string }
 export interface Submission { id:number; source_url:string; suggested_title?:string; reason:string; contact?:string; status:string; created_at:string }

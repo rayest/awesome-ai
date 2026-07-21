@@ -14,6 +14,7 @@ class ArticleOut(BaseModel):
     source_name: str | None = None
     source_url: str | None = None
     source_verified: bool
+    featured: bool = False
     published_at: datetime | None
     category_slug: str | None = None
     category_name: str | None = None
@@ -28,6 +29,7 @@ class TopicOut(BaseModel):
     summary: str
     audience: str
     goals: str
+    cover_url: str | None = None
     published_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)

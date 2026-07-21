@@ -12,6 +12,7 @@ export interface ArticleSummary {
   coverUrl: string | null
   sourceName: string
   sourceVerified: boolean
+  featured: boolean
 }
 
 export interface ArticleDetail extends ArticleSummary {
@@ -26,6 +27,7 @@ export interface TopicSummary {
   audience: string
   goals: string[]
   articleCount: number
+  coverUrl: string | null
 }
 
 export interface PodcastSummary {
@@ -35,6 +37,7 @@ export interface PodcastSummary {
   duration: string
   publishedAt: string
   audioUrl: string | null
+  coverUrl: string | null
   showNotesHtml?: string
   chapters?: Array<{ time: string; title: string }>
 }
@@ -85,7 +88,7 @@ function remoteArticle(item: Record<string, unknown>): ArticleSummary {
     category: String(item.category_slug || 'uncategorized'), categoryLabel: String(item.category_name || '未分类'),
     readingMinutes: Number(item.reading_minutes || 5), publishedAt: item.published_at ? String(item.published_at).slice(0, 10) : null,
     coverUrl: item.cover_url ? String(item.cover_url) : null, sourceName: String(item.source_name || '知序编辑部'),
-    sourceVerified: Boolean(item.source_verified),
+    sourceVerified: Boolean(item.source_verified), featured: Boolean(item.featured),
   }
 }
 
@@ -152,6 +155,7 @@ export async function listTopics(): Promise<TopicSummary[]> {
   return remote ? remote.map((item) => ({
     slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), audience: String(item.audience || ''),
     goals: parseGoals(item.goals), articleCount: Number(item.article_count || 0),
+    coverUrl: item.cover_url ? String(item.cover_url) : null,
   })) : []
 }
 
@@ -159,14 +163,14 @@ export async function getTopicBySlug(slug: string): Promise<(TopicSummary & { ar
   const remote = await apiRequest<Record<string, unknown>>(`/topics/${slug}`)
   if (remote) {
     const articles = Array.isArray(remote.articles) ? remote.articles.map((item) => remoteArticle(item as Record<string, unknown>)) : []
-    return { slug: String(remote.slug), title: String(remote.title), summary: String(remote.summary || ''), audience: String(remote.audience || ''), goals: parseGoals(remote.goals), articleCount: articles.length, articles }
+    return { slug: String(remote.slug), title: String(remote.title), summary: String(remote.summary || ''), audience: String(remote.audience || ''), goals: parseGoals(remote.goals), articleCount: articles.length, coverUrl: remote.cover_url ? String(remote.cover_url) : null, articles }
   }
   return null
 }
 
 export async function listPodcasts(): Promise<PodcastSummary[]> {
   const remote = await apiRequest<Array<Record<string, unknown>>>('/podcasts')
-  return remote ? Promise.all(remote.map(async (item) => ({ slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), duration: formatDuration(Number(item.duration_seconds || 0)), publishedAt: String(item.published_at || '').slice(0, 10), audioUrl: item.audio_url ? String(item.audio_url) : null, showNotesHtml: item.show_notes ? await renderMarkdown(String(item.show_notes)) : undefined, chapters: parseChapters(item.chapters) }))) : []
+  return remote ? Promise.all(remote.map(async (item) => ({ slug: String(item.slug), title: String(item.title), summary: String(item.summary || ''), duration: formatDuration(Number(item.duration_seconds || 0)), publishedAt: String(item.published_at || '').slice(0, 10), audioUrl: item.audio_url ? String(item.audio_url) : null, coverUrl: item.cover_url ? String(item.cover_url) : null, showNotesHtml: item.show_notes ? await renderMarkdown(String(item.show_notes)) : undefined, chapters: parseChapters(item.chapters) }))) : []
 }
 
 function parseGoals(value: unknown): string[] {

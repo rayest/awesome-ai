@@ -164,6 +164,7 @@ class TopicInput(BaseModel):
     summary: str = ""
     audience: str = ""
     goals: str = ""
+    cover_url: str | None = Field(default=None, max_length=500)
     article_ids: list[int] = Field(default_factory=list)
 
 
