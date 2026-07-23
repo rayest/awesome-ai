@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@docs/*": [
+        "./docs/*"
       ]
     }
   },
@@ -33,6 +36,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "docs/**/*.json",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

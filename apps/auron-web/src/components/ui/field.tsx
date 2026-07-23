@@ -19,12 +19,12 @@ export function FieldLabel({
 }) {
   return (
     <div className={cn("flex items-baseline justify-between mb-1.5", className)}>
-      <LabelPrimitive.Root className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+      <LabelPrimitive.Root className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
         {children}
         {required && <span className="text-[var(--primary)] ml-1">*</span>}
       </LabelPrimitive.Root>
       {hint && (
-        <span className="font-mono text-[10px] text-[var(--ink-mute)]">{hint}</span>
+        <span className="font-mono text-[14px] text-[var(--ink-mute)]">{hint}</span>
       )}
     </div>
   );
@@ -38,7 +38,7 @@ export function FieldHelp({
   className?: string;
 }) {
   return (
-    <p className={cn("mt-1 text-[11px] text-[var(--ink-mute)] font-mono", className)}>
+    <p className={cn("mt-1 text-[14px] text-[var(--ink-mute)] font-mono", className)}>
       {children}
     </p>
   );

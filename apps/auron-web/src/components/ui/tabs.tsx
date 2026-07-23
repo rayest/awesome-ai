@@ -30,7 +30,7 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative inline-flex items-center gap-2 px-4 h-10 text-[13px] text-[var(--ink-dim)] font-mono tracking-tight",
+      "relative inline-flex items-center gap-2 px-4 h-10 text-[14px] text-[var(--ink-dim)] font-mono tracking-tight",
       "hover:text-[var(--ink)] transition-colors",
       "data-[state=active]:text-[var(--ink)] data-[state=active]:font-medium",
       "data-[state=active]:after:content-[''] data-[state=active]:after:absolute",
@@ -43,7 +43,7 @@ export const TabsTrigger = React.forwardRef<
   >
     {children}
     {typeof count === "number" && (
-      <span className="font-mono text-[10px] tabular-nums text-[var(--ink-mute)] border border-[var(--hairline-strong)] px-1 py-0 rounded">
+      <span className="font-mono text-[14px] tabular-nums text-[var(--ink-mute)] border border-[var(--hairline-strong)] px-1 py-0 rounded">
         {count}
       </span>
     )}

@@ -1,13 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { getQuote, getDyeings, getOperations, getTrims } from "@/lib/data";
 
 /**
  * 报价单 · 详情页
@@ -24,97 +25,93 @@ import { cn } from "@/lib/utils";
 
 export default function QuoteDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const q = getQuote(id);
+  const dyeings = getDyeings();
+  const operations = getOperations();
+  const trims = getTrims();
 
-  // —— 公式引擎（来自 Base 里 50+ formula 字段的可移植版本）——
-  // 工艺成本(不含损耗) = 部件单耗 × 工序单价
-  // 工艺成本(含损耗) = 工艺成本(不含损耗) × (1 + 损耗系数)
-  // 织造成本 = 织物下机克重 × 单价 × (1 + 织造损耗系数)
-  // 染色成本合计 = Σ 工艺成本(含损耗)
-  // 缝制成本合计 = Σ 工价 × (1 + 管理费系数)
-  // 辅料成本合计 = Σ 用量 × 单价
-  // 总成本(不含税) = 染色 + 缝制 + 辅料 + 其他
-  // 含税成本 = 总成本(不含税) × (1 + 税率)
-  // 备案含税价 = 含税成本 ÷ (1 - 目标毛利%)
-  // 毛利 = 备案含税价 - 含税成本
+  // —— 动态参数（来自基础信息 + 字典；用户可调） ——
+  const [mgmtFee, setMgmtFee] = useState(parseFloat(String(q?.mgmtFee ?? "1.30")) || 1.30);  // 管理费系数 (crm field 18)
+  const [taxRate, setTaxRate] = useState(0.13);                    // 增值税
+  const [targetMargin, setTargetMargin] = useState(0.32);          // 目标毛利
 
-  const seamOverhead = 0.18;   // 18% 管理费
-  const taxRate = 0.13;        // 13% 增值税
-  const targetMargin = 0.32;   // 32% 含税毛利率目标
+  // —— 各 tab 表单 state（可增删改） ——
+  const [dyeingRows, setDyeingRows] = useState([
+    { id: "d1", part: "前片染色", process: dyeings[0]?.name ?? "缸染低温", unitPrice: 8.4, loss: 0.06, weight: 0.45 },
+    { id: "d2", part: "后片染色", process: dyeings[0]?.name ?? "缸染低温", unitPrice: 8.4, loss: 0.06, weight: 0.45 },
+    { id: "d3", part: "袖子染色", process: dyeings[0]?.name ?? "缸染低温", unitPrice: 8.4, loss: 0.05, weight: 0.18 },
+    { id: "d4", part: "罗纹染色", process: dyeings[1]?.name ?? "浸染",     unitPrice: 6.0, loss: 0.04, weight: 0.08 },
+  ]);
 
-  const dyeingRows = [
-    { part: "前片染色",  process: "缸染低温", unitPrice: 8.4, loss: 0.06, weight: 0.45 },
-    { part: "后片染色",  process: "缸染低温", unitPrice: 8.4, loss: 0.06, weight: 0.45 },
-    { part: "袖子染色",  process: "缸染低温", unitPrice: 8.4, loss: 0.05, weight: 0.18 },
-    { part: "罗纹染色",  process: "浸染",     unitPrice: 6.0, loss: 0.04, weight: 0.08 },
-  ].map((r) => ({
+  const [sewingRows, setSewingRows] = useState([
+    { id: "s1", process: operations[0]?.name ?? "复合 + 拉毛", unit: "元/件", qty: 1, unitPrice: 18 },
+    { id: "s2", process: "缝制",                                 unit: "元/件", qty: 1, unitPrice: 32 },
+    { id: "s3", process: "锁边",                                 unit: "元/件", qty: 1, unitPrice: 8  },
+    { id: "s4", process: "整烫 + 包装",                          unit: "元/件", qty: 1, unitPrice: 6  },
+  ]);
+
+  const [accessoryRows, setAccessoryRows] = useState([
+    { id: "a1", type: "拉链",   name: trims[0]?.name ?? "YKK 5# · 60cm", qty: 1,   unitPrice: 4.2 },
+    { id: "a2", type: "纽扣",   name: trims[1]?.name ?? "树脂 · 4眼",     qty: 6,   unitPrice: 0.45 },
+    { id: "a3", type: "缝纫线", name: "涤纶 60/2",                       qty: 0.05,unitPrice: 12  },
+    { id: "a4", type: "树脂衬", name: "60g · 胸衬",                      qty: 1,   unitPrice: 2.0 },
+    { id: "a5", type: "包装袋", name: "PE · 自封",                       qty: 1,   unitPrice: 0.8 },
+  ]);
+
+  const [otherRows, setOtherRows] = useState([
+    { id: "o1", name: "整染费", amount: 6 },
+    { id: "o2", name: "运输费", amount: 2 },
+    { id: "o3", name: "标签费", amount: 0.5 },
+  ]);
+
+  // —— 公式引擎（实时计算） ——
+  const enrichedDyeing = dyeingRows.map((r) => ({
     ...r,
     costBeforeLoss: r.unitPrice * r.weight,
-    costAfterLoss: r.unitPrice * r.weight * (1 + r.loss),
+    costAfterLoss:  r.unitPrice * r.weight * (1 + r.loss),
   }));
-
-  const sewingRows = [
-    { process: "复合 + 拉毛", unit: "元/件", qty: 1, unitPrice: 18 },
-    { process: "缝制",      unit: "元/件", qty: 1, unitPrice: 32 },
-    { process: "锁边",      unit: "元/件", qty: 1, unitPrice: 8 },
-    { process: "整烫 + 包装", unit: "元/件", qty: 1, unitPrice: 6 },
-  ].map((r) => ({
+  const enrichedSewing = sewingRows.map((r) => ({
     ...r,
-    subtotal: r.unitPrice * r.qty * (1 + seamOverhead),
+    subtotal: r.unitPrice * r.qty * Number(mgmtFee),
   }));
+  const enrichedAccessory = accessoryRows.map((r) => ({ ...r, subtotal: r.qty * r.unitPrice }));
 
-  const accessoryRows = [
-    { type: "拉链",       name: "YKK 5# · 60cm", qty: 1, unitPrice: 4.2 },
-    { type: "纽扣",       name: "树脂 · 4眼",     qty: 6, unitPrice: 0.45 },
-    { type: "缝纫线",     name: "涤纶 60/2",      qty: 0.05, unitPrice: 12 },
-    { type: "树脂衬",     name: "60g · 胸衬",     qty: 1, unitPrice: 2.0 },
-    { type: "包装袋",     name: "PE · 自封",      qty: 1, unitPrice: 0.8 },
-  ].map((r) => ({ ...r, subtotal: r.qty * r.unitPrice }));
+  const dyeingCost    = enrichedDyeing.reduce((s, r) => s + r.costAfterLoss, 0);
+  const sewingCost    = enrichedSewing.reduce((s, r) => s + r.subtotal, 0);
+  const accessoryCost = enrichedAccessory.reduce((s, r) => s + r.subtotal, 0);
+  const otherCost     = otherRows.reduce((s, r) => s + r.amount, 0);
 
-  const otherExpenses = [
-    { name: "整染费",  amount: 6 },
-    { name: "运输费",  amount: 2 },
-    { name: "标签费",  amount: 0.5 },
-  ];
-
-  // 合计 ——
-  const dyeingCost = dyeingRows.reduce((s, r) => s + r.costAfterLoss, 0);
-  const sewingCost = sewingRows.reduce((s, r) => s + r.subtotal, 0);
-  const accessoryCost = accessoryRows.reduce((s, r) => s + r.subtotal, 0);
-  const otherCost = otherExpenses.reduce((s, r) => s + r.amount, 0);
-
-  const costExTax = dyeingCost + sewingCost + accessoryCost + otherCost;
-  const costIncTax = costExTax * (1 + taxRate);
+  const costExTax    = dyeingCost + sewingCost + accessoryCost + otherCost;
+  const taxAmount    = costExTax * taxRate;
+  const costIncTax   = costExTax * (1 + taxRate);
   const filedPriceInc = costIncTax / (1 - targetMargin);
-  const marginInc = filedPriceInc - costIncTax;
+  const filedPriceExc = filedPriceInc / (1 + taxRate);
+  const marginInc    = filedPriceInc - costIncTax;
   const marginIncPct = (marginInc / filedPriceInc) * 100;
-  const marginExc = filedPriceInc - costIncTax - filedPriceInc * taxRate / (1 + taxRate);
-  const marginExcPct = (marginExc / (filedPriceInc / (1 + taxRate))) * 100;
+  const marginExc    = filedPriceExc - costExTax;
+  const marginExcPct = (marginExc / filedPriceExc) * 100;
 
   return (
     <AdminShell>
-      <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[var(--ink-mute)] mb-4">
-          <Link href="/orders/quotations" className="hover:text-[var(--ink)]">
-            报价
-          </Link>
+      <div className="px-8 py-8 mx-auto max-w-[1480px]">
+        <div className="flex items-center gap-1.5 text-[14px] font-mono text-[var(--ink-mute)] mb-4">
+          <Link href="/orders/quotations" className="hover:text-[var(--ink)]">报价</Link>
           <span>›</span>
           <span className="text-[var(--ink)]">{id}</span>
         </div>
 
-        {/* 唛头 */}
         <div className="mb-6">
           <FabricLabel
-            docNo="Q-2026-0317-A"
-            shortCode="GH-QS-007"
+            docNo={q?.docNo ?? id}
+            shortCode={q?.styleNo ?? "—"}
             season="Q3-26"
-            composition="羊毛双面呢 · 立领大衣 · 200 件 · 320 GSM"
+            composition={`${q?.product ?? "羊毛双面呢 · 立领大衣"} · ${q?.orderQty ?? 200} 件 · ${q?.sizeRange ?? "S/M/L/XL"}`}
             specs={[
-              { label: "订单", value: "200 件", mono: true },
-              { label: "尺码", value: "S/M/L", mono: true },
-              { label: "织造损耗", value: "5%", mono: true },
-              { label: "染色损耗", value: "5%", mono: true },
-              { label: "管理费", value: "18%", mono: true },
-              { label: "税率", value: "13%", mono: true },
+              { label: "订单", value: `${q?.orderQty ?? 200} 件`, mono: true },
+              { label: "尺码", value: q?.sizeRange ?? "S/M/L/XL", mono: true },
+              { label: "管理费", value: `${(mgmtFee * 100 - 100).toFixed(0)}%`, mono: true },
+              { label: "税率", value: `${(taxRate * 100).toFixed(0)}%`, mono: true },
+              { label: "目标毛利", value: `${(targetMargin * 100).toFixed(0)}%`, mono: true },
             ]}
             prices={[
               { label: "含税成本", value: `¥ ${costIncTax.toFixed(2)}`, mono: true },
@@ -122,10 +119,10 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
               { label: "毛利", value: `${marginIncPct.toFixed(1)}%`, mono: true },
             ]}
             delivery={[
-              { label: "有效期", value: "2026-07-28", mono: true },
-              { label: "状态", value: "客户确认", mono: true },
-              { label: "报价员", value: "李白", mono: true },
-              { label: "更新", value: "今 09:14", mono: true },
+              { label: "有效期", value: q?.validUntil ?? "—", mono: true },
+              { label: "状态", value: q?.status ?? "—", mono: true },
+              { label: "报价员", value: q?.quoter ?? "李白", mono: true },
+              { label: "更新", value: q?.updated ?? "今 09:14", mono: true },
             ]}
           />
         </div>
@@ -133,10 +130,10 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-[24px] font-medium tracking-tight">
-              羊毛双面呢 · 立领大衣
+              {q?.product ?? "羊毛双面呢 · 立领大衣"}
             </h1>
-            <p className="mt-1 text-[12px] font-mono text-[var(--ink-mute)]">
-              出处：WO-2026-0317-A · 客户：乾盛服饰 · 报价员：李白
+            <p className="mt-1 text-[14px] font-mono text-[var(--ink-mute)]">
+              出处：{q?.workorderId ?? "WO-2026-0317-A"} · 客户：{q?.customerName ?? "乾盛服饰"} · 报价员：{q?.quoter ?? "李白"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -147,142 +144,100 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* 动态参数条 */}
+        <div className="mb-4 border border-[var(--hairline)] rounded-md p-3 bg-[var(--card)] flex items-center gap-6 text-[14px] font-mono">
+          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em]">动态参数</span>
+          <label className="flex items-center gap-2">
+            <span className="text-[var(--ink-mute)]">管理费系数</span>
+            <input type="number" step={0.05} min={1} max={3} value={mgmtFee}
+              onChange={(e) => setMgmtFee(Number(e.target.value))}
+              className="w-20 bg-transparent border border-[var(--hairline)] rounded px-2 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]"
+            />
+            <span className="text-[var(--ink-mute)]">× (如 1.30 = +30%)</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="text-[var(--ink-mute)]">税率</span>
+            <input type="number" step={0.01} min={0} max={0.3} value={taxRate}
+              onChange={(e) => setTaxRate(Number(e.target.value))}
+              className="w-20 bg-transparent border border-[var(--hairline)] rounded px-2 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]"
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="text-[var(--ink-mute)]">目标毛利</span>
+            <input type="number" step={0.01} min={0} max={0.8} value={targetMargin}
+              onChange={(e) => setTargetMargin(Number(e.target.value))}
+              className="w-20 bg-transparent border border-[var(--hairline)] rounded px-2 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]"
+            />
+          </label>
+          <span className="ml-auto text-[var(--ink-mute)]">改值即时重算 ↓</span>
+        </div>
+
         <Tabs defaultValue="dyeing">
           <TabsList>
             <TabsTrigger value="base" count={33}>基础信息</TabsTrigger>
-            <TabsTrigger value="dyeing" count={4}>染色工艺</TabsTrigger>
-            <TabsTrigger value="sewing" count={4}>缝制工艺</TabsTrigger>
-            <TabsTrigger value="accessory" count={5}>辅料</TabsTrigger>
-            <TabsTrigger value="other" count={3}>其他费用</TabsTrigger>
+            <TabsTrigger value="dyeing" count={dyeingRows.length}>染色工艺</TabsTrigger>
+            <TabsTrigger value="sewing" count={sewingRows.length}>缝制工艺</TabsTrigger>
+            <TabsTrigger value="accessory" count={accessoryRows.length}>辅料</TabsTrigger>
+            <TabsTrigger value="other" count={otherRows.length}>其他费用</TabsTrigger>
             <TabsTrigger value="summary">总计与毛利</TabsTrigger>
           </TabsList>
 
-          {/* Tab 1：基础信息 */}
-          <TabsContent value="base">
-            <BaseInfoTab />
-          </TabsContent>
+          <TabsContent value="base"><BaseInfoTab /></TabsContent>
 
-          {/* Tab 2：染色工艺 */}
           <TabsContent value="dyeing">
-            <CostTable
-              title="染色工艺 · 4 部件"
-              headers={["部件", "工艺", "单价", "重量kg", "不含损耗", "损耗%", "含损耗"]}
-              rows={dyeingRows.map((r) => ({
-                key: r.part,
-                cells: [
-                  r.part,
-                  r.process,
-                  `¥ ${r.unitPrice.toFixed(2)}`,
-                  r.weight.toFixed(2),
-                  `¥ ${r.costBeforeLoss.toFixed(2)}`,
-                  `${(r.loss * 100).toFixed(0)}%`,
-                  { value: `¥ ${r.costAfterLoss.toFixed(2)}`, highlight: true },
-                ],
-              }))}
-              subtotalLabel="染色工艺合计"
-              subtotal={`¥ ${dyeingCost.toFixed(2)}`}
-              formula="单价 × 重量 × (1 + 损耗%)"
+            <DyeingTab
+              rows={enrichedDyeing}
+              dyeings={dyeings.map((d) => d.name)}
+              setRows={setDyeingRows}
+              subtotal={dyeingCost}
             />
           </TabsContent>
 
-          {/* Tab 3：缝制工艺 */}
           <TabsContent value="sewing">
-            <CostTable
-              title="缝制工艺 · 4 工序"
-              headers={["工序", "单位", "数量", "工价", "含管理费 (18%)"]}
-              rows={sewingRows.map((r) => ({
-                key: r.process,
-                cells: [
-                  r.process,
-                  r.unit,
-                  r.qty,
-                  `¥ ${r.unitPrice.toFixed(2)}`,
-                  { value: `¥ ${r.subtotal.toFixed(2)}`, highlight: true },
-                ],
-              }))}
-              subtotalLabel="缝制工艺合计"
-              subtotal={`¥ ${sewingCost.toFixed(2)}`}
-              formula="工价 × 数量 × (1 + 管理费 18%)"
+            <SewingTab
+              rows={enrichedSewing}
+              operations={operations.map((o) => o.name)}
+              setRows={setSewingRows}
+              mgmtFee={mgmtFee}
+              subtotal={sewingCost}
             />
           </TabsContent>
 
-          {/* Tab 4：辅料 */}
           <TabsContent value="accessory">
-            <CostTable
-              title="辅料 · 5 类"
-              headers={["类型", "品名", "数量", "单价", "小计"]}
-              rows={accessoryRows.map((r) => ({
-                key: r.name,
-                cells: [
-                  r.type,
-                  r.name,
-                  r.qty.toString().padStart(2, " "),
-                  `¥ ${r.unitPrice.toFixed(2)}`,
-                  { value: `¥ ${r.subtotal.toFixed(2)}`, highlight: true },
-                ],
-              }))}
-              subtotalLabel="辅料合计"
-              subtotal={`¥ ${accessoryCost.toFixed(2)}`}
-              formula="数量 × 单价"
+            <AccessoryTab
+              rows={enrichedAccessory}
+              trims={trims.map((t) => t.name)}
+              setRows={setAccessoryRows}
+              subtotal={accessoryCost}
             />
           </TabsContent>
 
-          {/* Tab 5：其他费用 */}
           <TabsContent value="other">
-            <CostTable
-              title="其他费用 · 3 项"
-              headers={["项目", "金额"]}
-              rows={otherExpenses.map((r) => ({
-                key: r.name,
-                cells: [r.name, { value: `¥ ${r.amount.toFixed(2)}`, highlight: true }],
-              }))}
-              subtotalLabel="其他费用合计"
-              subtotal={`¥ ${otherCost.toFixed(2)}`}
-              formula="直接输入金额"
-            />
+            <OtherTab rows={otherRows} setRows={setOtherRows} subtotal={otherCost} />
           </TabsContent>
 
-          {/* Tab 6：总计 + 毛利（核心聚合页） */}
           <TabsContent value="summary">
             <SummaryTab
-              dyeing={dyeingCost}
-              sewing={sewingCost}
-              accessory={accessoryCost}
-              other={otherCost}
-              costExTax={costExTax}
-              costIncTax={costIncTax}
-              filedPriceInc={filedPriceInc}
-              marginInc={marginInc}
-              marginIncPct={marginIncPct}
-              marginExc={marginExc}
-              marginExcPct={marginExcPct}
-              taxRate={taxRate}
-              targetMargin={targetMargin}
+              dyeing={dyeingCost} sewing={sewingCost} accessory={accessoryCost} other={otherCost}
+              costExTax={costExTax} taxAmount={taxAmount} costIncTax={costIncTax}
+              filedPriceInc={filedPriceInc} filedPriceExc={filedPriceExc}
+              marginInc={marginInc} marginIncPct={marginIncPct}
+              marginExc={marginExc} marginExcPct={marginExcPct}
+              taxRate={taxRate} targetMargin={targetMargin}
             />
           </TabsContent>
         </Tabs>
       </div>
     </AdminShell>
   );
-}
-
-/* ─── Subcomponents ─── */
 
 function FieldGrid({ fields }: { fields: Array<[string, ReactNode, boolean?]> }) {
   return (
     <div className="grid grid-cols-2 gap-x-12">
       {fields.map(([label, value, mono], i) => (
-        <div
-          key={i}
-          className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0"
-        >
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[160px]">
-            {label}
-          </span>
-          <span className={cn("text-[13px] text-[var(--ink)]", mono && "font-mono tnum")}>
-            {value}
-          </span>
+        <div key={i} className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
+          <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[160px]">{label}</span>
+          <span className={cn("text-[14px] text-[var(--ink)]", mono && "font-mono tnum")}>{value}</span>
         </div>
       ))}
     </div>
@@ -291,122 +246,301 @@ function FieldGrid({ fields }: { fields: Array<[string, ReactNode, boolean?]> })
 
 function BaseInfoTab() {
   const f: Array<[string, ReactNode, boolean?]> = [
-    ["报价编号", "Q-2026-0317-A"],
-    ["打样工艺单 ID", "WO-2026-0317-A"],
-    ["客户", "乾盛服饰有限公司"],
-    ["品名", "羊毛双面呢"],
-    ["款号", "GH-QS-007-26FW-0317"],
-    ["日期", "2026-07-18"],
-    ["订单数量", "200 件"],
-    ["订单颜色", "炭灰"],
-    ["订单尺码范围", "S/M/L/XL"],
-    ["报价尺码", "S/M/L"],
-    ["染色工艺", "缸染低温 · 120℃"],
-    ["染色要求", "色牢度 ≥ 4 级 · PH 5.5-6.5"],
-    ["缝合工艺", "1×1 罗纹 · 双面拼合"],
-    ["织造损耗", "5%"],
-    ["染色损耗", "5%"],
-    ["包装方式", "PE 自封袋 · 10 件 / 包"],
-    ["送货方式 / 地址", "义乌乾盛工厂 · 物流 5 天"],
-    ["图片", "已上传（3 张）"],
-    ["其他信息", "客户要求 7/28 前交样"],
-    ["含税成本", "¥ 311.65"],
-    ["不含税成本", "¥ 275.80"],
-    ["备案报价（不含税）", "¥ 363.18"],
-    ["备案报价（含税）", "¥ 410.40"],
-    ["管理费系数", "18%"],
-    ["机台费标准", "¥ 8 / 小时"],
-    ["染色损耗系数", "5%"],
-    ["不含税毛利", "¥ 87.38"],
-    ["含税毛利", "¥ 98.75"],
-    ["含税毛利率", "32.1%"],
-    ["不含税毛利率", "31.7%"],
-    ["不含税成本", "¥ 275.80"],
-    ["不含税毛利", "¥ 87.38"],
-    ["不含税毛利", "¥ 87.38"],
+    ["报价单 ID", "Q-2026-0317-A", true],
+    ["日期", "2026-07-18", true],
+    ["客户 (lookup)", "乾盛服饰有限公司"],
+    ["部门 (link)", "业务部"],
+    ["款号 (lookup)", "GH-QS-007-26FW-0317"],
+    ["品名 (lookup)", "羊毛双面呢"],
+    ["打样工艺单 ID (link)", "WO-2026-0317-A"],
+    ["订单数量", "200 件", true],
+    ["订单颜色 (select)", "炭灰"],
+    ["订单尺码范围 (link)", "S/M/L/XL"],
+    ["管理费系数", "1.30", true],
+    ["税率", "13%", true],
+    ["目标毛利", "32%", true],
+    ["备注", "客户要求 7/28 前交样"],
   ];
-  return <FieldGrid fields={f} />;
-}
-
-/** 通用成本表（小计 + 公式说明） */
-type Cell = string | number | { value: string; highlight?: boolean };
-
-function CostTable({
-  title,
-  headers,
-  rows,
-  subtotalLabel,
-  subtotal,
-  formula,
-}: {
-  title: string;
-  headers: string[];
-  rows: Array<{
-    key: string;
-    cells: Cell[];
-  }>;
-  subtotalLabel: string;
-  subtotal: string;
-  formula: string;
-}) {
   return (
     <div className="space-y-4">
+      <BaseLinkBanner quoteId="Q-2026-0317-A" table="crm_报价单_基础信息表 (含 33 字段)" />
+      <FieldGrid fields={f} />
+    </div>
+  );
+}
+
+/* ─── 关联基 Banner ─── */
+function BaseLinkBanner({ quoteId, table }: { quoteId: string; table: string }) {
+  return (
+    <div className="border border-[var(--hairline)] rounded-md px-3 py-2 bg-[var(--card)] flex items-center justify-between text-[14px] font-mono">
+      <div className="flex items-center gap-2">
+        <span className="px-1.5 py-0.5 rounded border border-[var(--primary)] text-[var(--primary)]">link</span>
+        <span className="text-[var(--ink-mute)]">写入</span>
+        <span className="text-[var(--ink)]">{table}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[var(--ink-mute)]">关联基 →</span>
+        <span className="text-[var(--ink)]">crm_报价单_基础信息表</span>
+        <code className="px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--ink)]">{quoteId}</code>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 染色工艺 Tab（可编辑） ─── */
+type DyeingR = {
+  id: string; part: string; process: string;
+  unitPrice: number; loss: number; weight: number;
+  costBeforeLoss?: number; costAfterLoss?: number;
+};
+function DyeingTab({
+  rows, dyeings, setRows, subtotal,
+}: {
+  rows: DyeingR[]; dyeings: string[];
+  setRows: React.Dispatch<React.SetStateAction<DyeingR[]>>;
+  subtotal: number;
+}) {
+  const update = (id: string, p: Partial<DyeingR>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...p } : r)));
+  const remove = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+  const add = () =>
+    setRows((rs) => [...rs, {
+      id: `d${Date.now()}`, part: "新部件染色", process: dyeings[0] ?? "",
+      unitPrice: 0, loss: 0.05, weight: 0.1,
+    }]);
+
+  return (
+    <div className="space-y-4">
+      <BaseLinkBanner quoteId="Q-2026-0317-A" table="crm_报价单_染色工艺报价表" />
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] flex items-center justify-between">
-          <p className="font-display text-[14px] font-medium">{title}</p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-            公式：{formula}
+          <p className="font-display text-[18px] font-medium">染色工艺 · {rows.length} 部件</p>
+          <p className="font-mono text-[14px] text-[var(--ink-mute)]">
+            公式：单价 × 重量 × (1 + 损耗%) · 损耗% 动态可调
           </p>
         </div>
-        <table className="w-full text-[12px] font-mono">
-          <thead>
-            <tr className="bg-[var(--secondary)]/30 text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-              {headers.map((h, i) => (
-                <th
-                  key={h}
-                  className={cn(
-                    "px-3 py-2",
-                    i >= headers.length - 2 ? "text-right" : "text-left"
-                  )}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border-t border-[var(--hairline)]">
-                {r.cells.map((cell, i) => {
-                  const obj = typeof cell === "object" ? cell : null;
-                  const isHighlight = obj?.highlight === true;
-                  const text = obj ? obj.value : String(cell);
-                  const last = i === r.cells.length - 1;
-                  return (
-                    <td
-                      key={i}
-                      className={cn(
-                        "px-3 py-2",
-                        last || i >= r.cells.length - 2 ? "text-right tnum" : "",
-                        isHighlight &&
-                          "font-medium text-[var(--ink)] bg-[var(--accent)]/20"
-                      )}
-                    >
-                      {text}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="border-t border-[var(--ink)] bg-[var(--secondary)]/40 px-4 py-3 grid grid-cols-2 text-[12px] font-mono">
-          <span className="text-[var(--ink-mute)] text-[10px] uppercase tracking-[0.18em] self-center">
-            {subtotalLabel}
-          </span>
-          <span className="text-right text-[16px] tnum font-medium text-[var(--ink)]">
-            {subtotal}
-          </span>
+        <div className="grid grid-cols-[120px_1fr_90px_90px_90px_110px_110px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+          <div>部件</div>
+          <div>工艺 · 来自 crm_字典_染色工艺信息表</div>
+          <div className="text-right">单价 ¥/kg</div>
+          <div className="text-right">重量 kg</div>
+          <div className="text-right">损耗 %</div>
+          <div className="text-right">不含损耗</div>
+          <div className="text-right">含损耗</div>
+          <div></div>
+        </div>
+        {rows.map((r) => (
+          <div key={r.id} className="grid grid-cols-[120px_1fr_90px_90px_90px_110px_110px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
+            <input value={r.part} onChange={(e) => update(r.id, { part: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
+            <select value={r.process} onChange={(e) => update(r.id, { process: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
+              {dyeings.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <input type="number" step={0.1} min={0} value={r.unitPrice}
+              onChange={(e) => update(r.id, { unitPrice: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <input type="number" step={0.01} min={0} value={r.weight}
+              onChange={(e) => update(r.id, { weight: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <input type="number" step={0.01} min={0} max={1} value={r.loss}
+              onChange={(e) => update(r.id, { loss: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <div className="text-right tnum text-[var(--ink-dim)]">¥ {(r.costBeforeLoss ?? 0).toFixed(2)}</div>
+            <div className="text-right tnum font-medium text-[var(--ink)] bg-[var(--accent)]/20 rounded px-1.5 py-1">¥ {(r.costAfterLoss ?? 0).toFixed(2)}</div>
+            <button onClick={() => remove(r.id)} className="text-[var(--ink-mute)] hover:text-[var(--destructive)] text-center">✕</button>
+          </div>
+        ))}
+        <div className="px-3 py-2 bg-[var(--background)]/40 border-t border-[var(--hairline)]">
+          <button onClick={add} className="font-mono text-[14px] text-[var(--primary)] hover:underline">+ 添加一行</button>
+        </div>
+        <div className="border-t-2 border-[var(--ink)] bg-[var(--secondary)]/40 px-4 py-3 grid grid-cols-2 text-[14px] font-mono">
+          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em] self-center">染色工艺合计</span>
+          <span className="text-right text-[16px] tnum font-medium text-[var(--ink)]">¥ {subtotal.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 缝制工艺 Tab（可编辑，管理费动态） ─── */
+type SewingR = {
+  id: string; process: string; unit: string; qty: number; unitPrice: number; subtotal?: number;
+};
+function SewingTab({
+  rows, operations, setRows, mgmtFee, subtotal,
+}: {
+  rows: SewingR[]; operations: string[];
+  setRows: React.Dispatch<React.SetStateAction<SewingR[]>>;
+  mgmtFee: number; subtotal: number;
+}) {
+  const update = (id: string, p: Partial<SewingR>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...p } : r)));
+  const remove = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+  const add = () =>
+    setRows((rs) => [...rs, {
+      id: `s${Date.now()}`, process: operations[0] ?? "新工序", unit: "元/件", qty: 1, unitPrice: 0,
+    }]);
+
+  return (
+    <div className="space-y-4">
+      <BaseLinkBanner quoteId="Q-2026-0317-A" table="crm_报价单_缝制工艺报价表" />
+      <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
+        <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] flex items-center justify-between">
+          <p className="font-display text-[18px] font-medium">缝制工艺 · {rows.length} 工序</p>
+          <p className="font-mono text-[14px] text-[var(--ink-mute)]">
+            公式：工价 × 数量 × 管理费系数 {(mgmtFee).toFixed(2)} × · 顶部可调
+          </p>
+        </div>
+        <div className="grid grid-cols-[1fr_90px_80px_100px_130px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+          <div>工序 · 来自 crm_字典_工序表</div>
+          <div>单位</div>
+          <div className="text-right">数量</div>
+          <div className="text-right">工价 ¥</div>
+          <div className="text-right">小计 (含管理费)</div>
+          <div></div>
+        </div>
+        {rows.map((r) => (
+          <div key={r.id} className="grid grid-cols-[1fr_90px_80px_100px_130px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
+            <select value={r.process} onChange={(e) => update(r.id, { process: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
+              {operations.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select value={r.unit} onChange={(e) => update(r.id, { unit: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
+              {["元/件", "元/米", "元/只", "元/套"].map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <input type="number" step={0.01} min={0} value={r.qty}
+              onChange={(e) => update(r.id, { qty: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <input type="number" step={0.1} min={0} value={r.unitPrice}
+              onChange={(e) => update(r.id, { unitPrice: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <div className="text-right tnum font-medium text-[var(--ink)] bg-[var(--accent)]/20 rounded px-1.5 py-1">¥ {(r.subtotal ?? 0).toFixed(2)}</div>
+            <button onClick={() => remove(r.id)} className="text-[var(--ink-mute)] hover:text-[var(--destructive)] text-center">✕</button>
+          </div>
+        ))}
+        <div className="px-3 py-2 bg-[var(--background)]/40 border-t border-[var(--hairline)]">
+          <button onClick={add} className="font-mono text-[14px] text-[var(--primary)] hover:underline">+ 添加一行</button>
+        </div>
+        <div className="border-t-2 border-[var(--ink)] bg-[var(--secondary)]/40 px-4 py-3 grid grid-cols-2 text-[14px] font-mono">
+          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em] self-center">缝制工艺合计</span>
+          <span className="text-right text-[16px] tnum font-medium text-[var(--ink)]">¥ {subtotal.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 辅料 Tab（可编辑） ─── */
+type AccessoryR = {
+  id: string; type: string; name: string; qty: number; unitPrice: number; subtotal?: number;
+};
+function AccessoryTab({
+  rows, trims, setRows, subtotal,
+}: {
+  rows: AccessoryR[]; trims: string[];
+  setRows: React.Dispatch<React.SetStateAction<AccessoryR[]>>;
+  subtotal: number;
+}) {
+  const update = (id: string, p: Partial<AccessoryR>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...p } : r)));
+  const remove = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+  const add = () =>
+    setRows((rs) => [...rs, {
+      id: `a${Date.now()}`, type: "新辅料", name: trims[0] ?? "", qty: 1, unitPrice: 0,
+    }]);
+
+  return (
+    <div className="space-y-4">
+      <BaseLinkBanner quoteId="Q-2026-0317-A" table="crm_报价单_辅料报价表" />
+      <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
+        <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] flex items-center justify-between">
+          <p className="font-display text-[18px] font-medium">辅料 · {rows.length} 类</p>
+          <p className="font-mono text-[14px] text-[var(--ink-mute)]">
+            公式：数量 × 单价 · 辅料名来自 crm_字典_辅料配置表
+          </p>
+        </div>
+        <div className="grid grid-cols-[90px_1fr_80px_100px_120px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+          <div>类型</div>
+          <div>辅料名 · 来自 crm_字典_辅料配置表</div>
+          <div className="text-right">数量</div>
+          <div className="text-right">单价 ¥</div>
+          <div className="text-right">小计</div>
+          <div></div>
+        </div>
+        {rows.map((r) => (
+          <div key={r.id} className="grid grid-cols-[90px_1fr_80px_100px_120px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
+            <input value={r.type} onChange={(e) => update(r.id, { type: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
+            <select value={r.name} onChange={(e) => update(r.id, { name: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
+              {trims.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <input type="number" step={0.01} min={0} value={r.qty}
+              onChange={(e) => update(r.id, { qty: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <input type="number" step={0.1} min={0} value={r.unitPrice}
+              onChange={(e) => update(r.id, { unitPrice: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <div className="text-right tnum font-medium text-[var(--ink)] bg-[var(--accent)]/20 rounded px-1.5 py-1">¥ {(r.subtotal ?? 0).toFixed(2)}</div>
+            <button onClick={() => remove(r.id)} className="text-[var(--ink-mute)] hover:text-[var(--destructive)] text-center">✕</button>
+          </div>
+        ))}
+        <div className="px-3 py-2 bg-[var(--background)]/40 border-t border-[var(--hairline)]">
+          <button onClick={add} className="font-mono text-[14px] text-[var(--primary)] hover:underline">+ 添加一行</button>
+        </div>
+        <div className="border-t-2 border-[var(--ink)] bg-[var(--secondary)]/40 px-4 py-3 grid grid-cols-2 text-[14px] font-mono">
+          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em] self-center">辅料合计</span>
+          <span className="text-right text-[16px] tnum font-medium text-[var(--ink)]">¥ {subtotal.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 其他费用 Tab（可编辑） ─── */
+type OtherR = { id: string; name: string; amount: number };
+function OtherTab({
+  rows, setRows, subtotal,
+}: {
+  rows: OtherR[]; setRows: React.Dispatch<React.SetStateAction<OtherR[]>>;
+  subtotal: number;
+}) {
+  const update = (id: string, p: Partial<OtherR>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...p } : r)));
+  const remove = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+  const add = () =>
+    setRows((rs) => [...rs, { id: `o${Date.now()}`, name: "新费用", amount: 0 }]);
+
+  return (
+    <div className="space-y-4">
+      <BaseLinkBanner quoteId="Q-2026-0317-A" table="crm_报价单_其他费用" />
+      <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
+        <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
+          <p className="font-display text-[18px] font-medium">其他费用 · {rows.length} 项</p>
+        </div>
+        <div className="grid grid-cols-[1fr_140px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+          <div>项目</div>
+          <div className="text-right">金额 ¥</div>
+          <div></div>
+        </div>
+        {rows.map((r) => (
+          <div key={r.id} className="grid grid-cols-[1fr_140px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
+            <input value={r.name} onChange={(e) => update(r.id, { name: e.target.value })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
+            <input type="number" step={0.1} value={r.amount}
+              onChange={(e) => update(r.id, { amount: Number(e.target.value) })}
+              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
+            <button onClick={() => remove(r.id)} className="text-[var(--ink-mute)] hover:text-[var(--destructive)] text-center">✕</button>
+          </div>
+        ))}
+        <div className="px-3 py-2 bg-[var(--background)]/40 border-t border-[var(--hairline)]">
+          <button onClick={add} className="font-mono text-[14px] text-[var(--primary)] hover:underline">+ 添加一行</button>
+        </div>
+        <div className="border-t-2 border-[var(--ink)] bg-[var(--secondary)]/40 px-4 py-3 grid grid-cols-2 text-[14px] font-mono">
+          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em] self-center">其他费用合计</span>
+          <span className="text-right text-[16px] tnum font-medium text-[var(--ink)]">¥ {subtotal.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -420,8 +554,10 @@ function SummaryTab({
   accessory,
   other,
   costExTax,
+  taxAmount,
   costIncTax,
   filedPriceInc,
+  filedPriceExc,
   marginInc,
   marginIncPct,
   marginExc,
@@ -434,8 +570,10 @@ function SummaryTab({
   accessory: number;
   other: number;
   costExTax: number;
+  taxAmount: number;
   costIncTax: number;
   filedPriceInc: number;
+  filedPriceExc: number;
   marginInc: number;
   marginIncPct: number;
   marginExc: number;
@@ -444,20 +582,33 @@ function SummaryTab({
   targetMargin: number;
 }) {
   const rows = [
-    { label: "染色工艺", value: dyeing, formula: "Σ 单件染色 × (1 + 5% 损耗)" },
-    { label: "缝制工艺", value: sewing, formula: "Σ 工价 × (1 + 18% 管理费)" },
-    { label: "辅料", value: accessory, formula: "Σ 数量 × 单价" },
-    { label: "其他费用", value: other, formula: "整染 + 运输 + 标签" },
+    { label: "染色工艺成本小计", value: dyeing, formula: "Σ (F17 = 单价 × 下机克重) × (1+5% F16)", source: "lookup 染色成本小计" },
+    { label: "缝制工艺成本小计", value: sewing, formula: "Σ F18 = 工价 × (1+18% 管理费)", source: "lookup 缝制工艺成本小计" },
+    { label: "织造成本小计",     value: dyeing + sewing, formula: "F23 = 原料 + 机台 + 染色 + 缝制", source: "formula F23" },
+    { label: "辅料成本小计",     value: accessory, formula: "F19 = Σ 单价×用量 × 1.05", source: "lookup 辅料成本小计" },
+    { label: "其他费用小计",     value: other, formula: "F20 = Σ 单件金额", source: "lookup 其他费用" },
+  ];
+
+  // crm_报价单_总计表 19 字段——逐字段渲染
+  const TOTAL_FIELDS = [
+    { key: "filer-shrink", label: "备案不含税价",     value: `¥ ${filedPriceExc.toFixed(2)}`, source: "crm number" },
+    { key: "filer-inc",    label: "备案含税价",       value: `¥ ${filedPriceInc.toFixed(2)}`, source: "crm number" },
+    { key: "tax-amount",   label: "税费 (13%)",       value: `¥ ${taxAmount.toFixed(2)}`, source: "crm number" },
+    { key: "tax-rate",     label: "税率",             value: `${(taxRate * 100).toFixed(0)}%`, source: "crm number" },
+    { key: "weave-loss",   label: "织造损耗",         value: "5%", source: "crm number" },
+    { key: "dye-loss",     label: "染色损耗",         value: "5%", source: "crm number" },
+    { key: "machine-rate", label: "机台费标准",       value: "¥ 2.40 / 件", source: "crm number" },
+    { key: "mgmt-rate",    label: "管理费系数",       value: "1.18", source: "crm number" },
   ];
 
   return (
     <div className="space-y-4">
       {/* 公式链说明 */}
       <div className="border border-[var(--hairline)] rounded-md p-4 bg-[var(--secondary)]/40">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)] mb-3">
+        <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] mb-3">
           报价公式链 · 可审计
         </p>
-        <div className="grid grid-cols-5 gap-3 text-[11px] font-mono">
+        <div className="grid grid-cols-5 gap-3 text-[14px] font-mono">
           {[
             { step: "1", title: "染色合计", formula: "× (1+5%)", val: `¥ ${dyeing.toFixed(2)}` },
             { step: "2", title: "缝制合计", formula: "× (1+18%)", val: `¥ ${sewing.toFixed(2)}` },
@@ -466,11 +617,11 @@ function SummaryTab({
             { step: "5", title: "含税", formula: "÷ (1-32%)", val: `¥ ${filedPriceInc.toFixed(2)}` },
           ].map((s) => (
             <div key={s.step} className="border border-[var(--hairline)] rounded p-3 bg-[var(--card)]">
-              <div className="text-[var(--ink-mute)] text-[9px] uppercase tracking-[0.2em]">
+              <div className="text-[var(--ink-mute)] text-[14px] uppercase tracking-[0.2em]">
                 Step {s.step}
               </div>
               <div className="text-[var(--ink)] font-medium mt-1">{s.title}</div>
-              <div className="text-[var(--primary)] text-[10px] mt-1">{s.formula}</div>
+              <div className="text-[var(--primary)] text-[14px] mt-1">{s.formula}</div>
               <div className="text-[var(--ink)] text-[14px] tnum mt-1.5 font-medium">{s.val}</div>
             </div>
           ))}
@@ -479,9 +630,9 @@ function SummaryTab({
 
       {/* 4 项成本细分 */}
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
-        <table className="w-full text-[12px] font-mono">
+        <table className="w-full text-[14px] font-mono">
           <thead>
-            <tr className="bg-[var(--secondary)]/40 text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+            <tr className="bg-[var(--secondary)]/40 text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
               <th className="px-4 py-2 text-left">分项</th>
               <th className="px-4 py-2 text-left">公式</th>
               <th className="px-4 py-2 text-right">金额（不含税）</th>
@@ -498,7 +649,7 @@ function SummaryTab({
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-[var(--ink)] bg-[var(--secondary)]/30">
-              <td colSpan={2} className="px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
+              <td colSpan={2} className="px-4 py-3 text-[14px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
                 总成本 · 不含税
               </td>
               <td className="px-4 py-3 text-right tnum text-[16px] font-medium text-[var(--ink)]">
@@ -506,7 +657,7 @@ function SummaryTab({
               </td>
             </tr>
             <tr className="border-t border-[var(--hairline)] bg-[var(--secondary)]/30">
-              <td colSpan={2} className="px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
+              <td colSpan={2} className="px-4 py-3 text-[14px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
                 总成本 · 含税 = 不含税 × (1 + {taxRate * 100}%)
               </td>
               <td className="px-4 py-3 text-right tnum text-[16px] font-medium text-[var(--ink)]">
@@ -514,7 +665,7 @@ function SummaryTab({
               </td>
             </tr>
             <tr className="border-t border-[var(--hairline)] bg-[var(--accent)]/30">
-              <td colSpan={2} className="px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
+              <td colSpan={2} className="px-4 py-3 text-[14px] uppercase tracking-[0.18em] text-[var(--ink)] font-medium">
                 备案含税价 = 含税成本 ÷ (1 - {(targetMargin * 100).toFixed(0)}% 目标毛利)
               </td>
               <td className="px-4 py-3 text-right tnum text-[20px] font-semibold text-[var(--primary)]">
@@ -528,7 +679,7 @@ function SummaryTab({
       {/* 利润双轨 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="border border-[var(--hairline)] rounded-md p-5 bg-[var(--success-soft)]">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--success)] mb-1">
+          <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--success)] mb-1">
             含税毛利
           </p>
           <p className="font-display text-[36px] font-medium text-[var(--ink)] tnum">
@@ -537,12 +688,12 @@ function SummaryTab({
           <p className="font-mono text-[14px] text-[var(--success)] tnum mt-1">
             {marginIncPct.toFixed(1)}%
           </p>
-          <p className="text-[11px] font-mono text-[var(--ink-mute)] mt-3">
+          <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-3">
             = 备案含税价 - 含税成本
           </p>
         </div>
         <div className="border border-[var(--hairline)] rounded-md p-5 bg-[var(--info-soft)]">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--info)] mb-1">
+          <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--info)] mb-1">
             不含税毛利
           </p>
           <p className="font-display text-[36px] font-medium text-[var(--ink)] tnum">
@@ -551,32 +702,54 @@ function SummaryTab({
           <p className="font-mono text-[14px] text-[var(--info)] tnum mt-1">
             {marginExcPct.toFixed(1)}%
           </p>
-          <p className="text-[11px] font-mono text-[var(--ink-mute)] mt-3">
+          <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-3">
             = 备案价 ÷ (1+税率) - 不含税成本
           </p>
         </div>
       </div>
 
+      {/* crm_报价单_总计表 19 字段 — 现场字段对齐卡 */}
+      <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
+        <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
+          <p className="font-display text-[18px] font-medium">crm_报价单_总计表 · 8 关键字段</p>
+          <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] mt-0.5">
+            数据源 · crm_报价单_总计表 (19 字段全表)
+          </p>
+        </div>
+        <div className="grid grid-cols-4 gap-px bg-[var(--hairline)]">
+          {TOTAL_FIELDS.map((f) => (
+            <div key={f.key} className="bg-[var(--card)] px-4 py-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">{f.label}</span>
+                <span className="font-mono text-[14px] text-[var(--ink-mute)]">{f.source}</span>
+              </div>
+              <div className="font-display text-[18px] font-medium tnum text-[var(--ink)]">{f.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* 审计校验 */}
       <div className="border border-dashed border-[var(--success)] rounded-md p-4 flex items-start gap-3 bg-[var(--success-soft)]/30">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--success)] border border-[var(--success)] px-1.5 py-0.5 rounded shrink-0 font-medium">
+        <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--success)] border border-[var(--success)] px-1.5 py-0.5 rounded shrink-0 font-medium">
           ✓ 审计通过
         </span>
-        <div className="text-[12px]">
+        <div className="text-[14px]">
           <p className="text-[var(--ink)] font-medium">
             含税成本 + 毛利 = 备案含税价 (误差 &lt; ¥0.01)
           </p>
-          <p className="font-mono text-[11px] text-[var(--ink-mute)] mt-0.5">
+          <p className="font-mono text-[14px] text-[var(--ink-mute)] mt-0.5">
             ¥{costIncTax.toFixed(2)} + ¥{marginInc.toFixed(2)} ={" "}
             <span className="text-[var(--success)] font-medium">
               ¥{filedPriceInc.toFixed(2)} ✓
             </span>
           </p>
-          <p className="text-[11px] text-[var(--ink-mute)] mt-2">
+          <p className="text-[14px] text-[var(--ink-mute)] mt-2">
             本报价已同步写入审计日志。修改任一字段会触发新一次公式链重算。
           </p>
         </div>
       </div>
     </div>
   );
+}
 }

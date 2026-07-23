@@ -69,8 +69,11 @@
 
   * { border-color: var(--border); }
   html, body { background: var(--background); color: var(--foreground); }
+  html { font-size: 16px; }   /* baseline · 1rem = 16px */
   body {
     font-family: var(--font-sans);
+    font-size: var(--text-body);  /* 14px · 提升自 13px */
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-feature-settings: "ss01", "cv11";
@@ -79,7 +82,25 @@
     font-family: var(--font-display);
     letter-spacing: -0.025em;
     font-weight: 500;
+    line-height: 1.2;
   }
+
+  /* —— typography scale（密集 ERP 友好 · 14px baseline） —— */
+  :root {
+    --text-body:        14px;  /* 正文（从 13 提升） */
+    --text-body-sm:     13px;  /* 紧凑正文 / 表行 */
+    --text-mono:        13px;  /* mono 数据（从 12-13 提升） */
+    --text-mono-sm:     12px;  /* 表头 / 时序 */
+    --text-label:       12px;  /* 字段标签（从 10-11 提升） */
+    --text-micro:       11px;  /* 角标 / 来源（从 9-10 提升） */
+    --text-display-sm:  15px;  /* h4 · section 副标 */
+    --text-display-md:  18px;  /* h3 · section 大标 */
+    --text-display-lg:  24px;  /* h2 · 页头 */
+    --text-display-xl:  32px;  /* h1 · 页面主标题（从 28 提升） */
+    --text-display-kpi-xl: 40px;  /* KPI 大数字 */
+    --text-display-kpi-lg: 32px;  /* KPI 中数字 */
+  }
+
   ::selection { background: var(--primary); color: var(--primary-foreground); }
 
   .tnum { font-feature-settings: "tnum" 1, "lnum" 1; }

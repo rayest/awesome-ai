@@ -66,7 +66,7 @@ export const SheetContent = React.forwardRef<
             </DialogPrimitive.Title>
           )}
           {description && (
-            <DialogPrimitive.Description className="mt-1 text-[12px] text-[var(--ink-mute)] font-mono">
+            <DialogPrimitive.Description className="mt-1 text-[14px] text-[var(--ink-mute)] font-mono">
               {description}
             </DialogPrimitive.Description>
           )}

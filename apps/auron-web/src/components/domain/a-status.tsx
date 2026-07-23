@@ -43,7 +43,7 @@ export function NumChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono tnum tracking-tight",
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[14px] font-mono tnum tracking-tight",
         toneClass
       )}
     >

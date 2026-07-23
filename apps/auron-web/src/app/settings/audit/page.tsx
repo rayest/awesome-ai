@@ -194,11 +194,11 @@ export default function AuditLogPage() {
 
         <div className="flex items-end justify-between mb-5">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
+            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
               SETTINGS · audit-log
             </p>
-            <h1 className="font-display text-[28px] font-medium tracking-tight">审计日志</h1>
-            <p className="mt-1.5 text-[13px] text-[var(--ink-dim)] max-w-[520px]">
+            <h1 className="font-display text-[32px] font-medium tracking-tight">审计日志</h1>
+            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
               谁、什么时间、哪个字段、改成什么、为何改。**Base 没有这个能力。**
             </p>
           </div>
@@ -228,7 +228,7 @@ export default function AuditLogPage() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "h-9 px-3 rounded-md text-[12px] transition-colors font-mono tracking-tight",
+                  "h-9 px-3 rounded-md text-[14px] transition-colors font-mono tracking-tight",
                   filter === f
                     ? "bg-[var(--ink)] text-[var(--background)]"
                     : "text-[var(--ink-dim)] hover:bg-[var(--accent)]"
@@ -242,7 +242,7 @@ export default function AuditLogPage() {
 
         {/* 时间线式审计条目 */}
         <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
-          <div className="px-4 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)] grid grid-cols-[180px_120px_180px_1fr] gap-3">
+          <div className="px-4 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)] grid grid-cols-[180px_120px_180px_1fr] gap-3">
             <div>时间</div>
             <div>操作人</div>
             <div>类型 / 记录</div>
@@ -255,12 +255,12 @@ export default function AuditLogPage() {
         </div>
 
         {/* 说明卡 */}
-        <div className="mt-4 border border-dashed border-[var(--hairline-strong)] rounded-md p-4 text-[12px] text-[var(--ink-mute)] font-mono space-y-1">
+        <div className="mt-4 border border-dashed border-[var(--hairline-strong)] rounded-md p-4 text-[14px] text-[var(--ink-mute)] font-mono space-y-1">
           <p className="flex items-center gap-1.5 text-[var(--ink-dim)]">
             <Lock className="w-3 h-3" />
             敏感字段（含税成本 / 备案价 / 毛利率）的访问会单独留痕，且 value 经过 AES-256-GCM 加密存储。
           </p>
-          <p className="text-[11px]">
+          <p className="text-[14px]">
             系统每 15 分钟生成完整性哈希链；任何条目被改动，验签会失败。
           </p>
         </div>
@@ -276,34 +276,34 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
   return (
     <div className="border-b border-[var(--hairline)] last:border-b-0">
       <div className="px-4 py-3 grid grid-cols-[180px_120px_180px_1fr] gap-3 items-start">
-        <div className="font-mono text-[11px] text-[var(--ink-dim)]">
+        <div className="font-mono text-[14px] text-[var(--ink-dim)]">
           {entry.ts}
-          <div className="text-[10px] text-[var(--ink-mute)] mt-0.5">{entry.ip}</div>
+          <div className="text-[14px] text-[var(--ink-mute)] mt-0.5">{entry.ip}</div>
         </div>
         <div>
           <div className="flex items-center gap-1.5">
             <span
-              className="font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded"
+              className="font-mono text-[14px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded"
               style={{ background: roleColor + "20", color: roleColor }}
             >
               {entry.actorRole}
             </span>
           </div>
-          <div className="text-[12px] text-[var(--ink)] mt-1">{entry.actor}</div>
+          <div className="text-[14px] text-[var(--ink)] mt-1">{entry.actor}</div>
         </div>
         <div>
           <Badge tone={actionMeta.tone as "success" | "info" | "danger" | "warn" | "neutral"} size="sm">
             {actionMeta.label}
           </Badge>
-          <div className="font-mono text-[11px] text-[var(--ink-dim)] mt-1.5 truncate">
+          <div className="font-mono text-[14px] text-[var(--ink-dim)] mt-1.5 truncate">
             {entry.record}
           </div>
-          <div className="text-[10px] font-mono text-[var(--ink-mute)] truncate">
+          <div className="text-[14px] font-mono text-[var(--ink-mute)] truncate">
             {entry.recordType}
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] text-[var(--ink)]">{entry.summary}</p>
+          <p className="text-[14px] text-[var(--ink)]">{entry.summary}</p>
           {entry.diff && entry.diff.length > 0 && (
             <div className="mt-2 space-y-1">
               {entry.diff.map((d, i) => (
@@ -312,7 +312,7 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
             </div>
           )}
           {entry.reason && (
-            <p className="mt-2 text-[11px] text-[var(--ink-mute)] italic">
+            <p className="mt-2 text-[14px] text-[var(--ink-mute)] italic">
               备注：{entry.reason}
             </p>
           )}
@@ -326,18 +326,18 @@ function DiffRow({ d }: { d: { field: string; before: string; after: string; sen
   return (
     <div
       className={cn(
-        "flex items-center gap-2 text-[11px] font-mono",
+        "flex items-center gap-2 text-[14px] font-mono",
         d.sensitive ? "text-[var(--warn)]" : "text-[var(--ink-dim)]"
       )}
     >
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)] min-w-[80px]">
+      <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] min-w-[80px]">
         {d.field}
       </span>
       <span className="line-through opacity-50">{d.before}</span>
       <ArrowRight className="w-3 h-3 opacity-50" />
       <span className={cn(d.sensitive && "font-medium")}>{d.after}</span>
       {d.sensitive && (
-        <span className="text-[9px] uppercase tracking-[0.18em] text-[var(--warn)] border border-[var(--warn)] px-1 rounded">
+        <span className="text-[14px] uppercase tracking-[0.18em] text-[var(--warn)] border border-[var(--warn)] px-1 rounded">
           敏感
         </span>
       )}

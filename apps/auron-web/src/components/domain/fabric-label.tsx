@@ -78,12 +78,12 @@ export function FabricLabel({
               {docNo}
             </span>
             {shortCode && (
-              <span className="font-mono text-[12px] text-[var(--accent)] tracking-wider">
+              <span className="font-mono text-[14px] text-[var(--accent)] tracking-wider">
                 {shortCode}
               </span>
             )}
             {season && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)] border border-white/10 px-1.5 py-0.5">
+              <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] border border-white/10 px-1.5 py-0.5">
                 {season}
               </span>
             )}
@@ -91,7 +91,7 @@ export function FabricLabel({
 
           {/* 成分 */}
           {composition && (
-            <div className="font-mono text-[13px] text-[var(--bone-dim,#c9c5b8)] tracking-wide">
+            <div className="font-mono text-[14px] text-[var(--bone-dim,#c9c5b8)] tracking-wide">
               {composition}
             </div>
           )}
@@ -120,7 +120,7 @@ export function FabricLabel({
         <div className="flex md:flex-col items-end md:items-center justify-center md:justify-center gap-2 md:border-l md:border-white/10 md:pl-4">
           {rightSlot ?? (
             <div className="text-center">
-              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--ink-mute)]">
+              <div className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)]">
                 QR
               </div>
               <div className="mt-1 grid grid-cols-6 gap-[2px] w-16 h-16 mx-auto">
@@ -153,12 +153,12 @@ function FieldRow({
     <div className="flex flex-wrap gap-x-5 gap-y-1.5">
       {items.map((it, i) => (
         <div key={i} className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0">
+          <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0">
             {it.label}
           </span>
           <span
             className={cn(
-              "text-[13px] leading-none",
+              "text-[14px] leading-none",
               it.mono && "font-mono tnum",
               variant === "price" &&
                 "text-[15px] font-mono tnum text-white font-medium"

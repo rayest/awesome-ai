@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,7 +32,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="zh-CN"
       className={`${inter.variable} ${mono.variable} ${serif.variable}`}
     >
-      <body className="bg-background text-foreground antialiased">{children}</body>
+      <body className="bg-background text-foreground antialiased">
+        {children}
+        <Toaster
+          position="bottom-right"
+          theme="light"
+          toastOptions={{
+            style: {
+              fontFamily: "var(--font-sans)",
+              fontSize: "13px",
+              border: "1px solid var(--hairline-strong)",
+              background: "var(--card)",
+              color: "var(--ink)",
+              boxShadow: "0 24px 48px -12px rgba(0,0,0,0.12)",
+            },
+            className: "rounded-md",
+          }}
+        />
+      </body>
     </html>
   );
 }

@@ -1,83 +1,87 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { use, useState, useEffect, useMemo } from "react";
 import {
   DndContext,
-  closestCenter,
-  KeyboardSensor,
+  DragOverlay,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
+  closestCenter,
   useDroppable,
-  DragOverlay,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
+  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Phone, MessageCircle, Calendar, GripVertical } from "lucide-react";
+import {
+  Phone,
+  MessageCircle,
+  Calendar,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
+import { AdminShell } from "@/components/layout/admin-shell";
+import { FabricLabel } from "@/components/domain/fabric-label";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { getFollowups } from "@/lib/data";
 
-/**
- * 跟进看板 · Kanban
- *
- * 5 列状态：
- *   新跟进 · 已联系 · 待回访 · 客户确认 · 已成交
- *
- * 用 @dnd-kit 实现卡片跨列拖拽（drag-and-drop）
- * 这是销售 pipeline 看板，base 里没有这种视图。
- */
+const COLUMNS = [
+  { id: "初步接触",     label: "初步接触", tone: "neutral" },
+  { id: "需求确认",     label: "需求确认", tone: "info" },
+  { id: "方案制定",     label: "方案制定", tone: "info" },
+  { id: "商务洽谈",     label: "商务洽谈", tone: "primary" },
+  { id: "签约成交",     label: "签约成交", tone: "success" },
+  { id: "合作中",       label: "合作中",   tone: "success" },
+  { id: "合作结束",     label: "合作结束", tone: "neutral" },
+] as const;
 
-type ColId = "lead" | "contacted" | "followup" | "waiting" | "won";
-
-const COLUMNS: { id: ColId; label: string; tone: string }[] = [
-  { id: "lead",       label: "新跟进",   tone: "neutral" },
-  { id: "contacted",  label: "已联系",   tone: "info" },
-  { id: "followup",   label: "待回访",   tone: "warn" },
-  { id: "waiting",    label: "客户确认", tone: "primary" },
-  { id: "won",        label: "已成交",   tone: "success" },
-];
+type Status = typeof COLUMNS[number]["id"];
 
 type FollowUp = {
   id: string;
-  customer: string;
-  contact: string;
-  phone: string;
+  customer: string;          // 客户 (lookup crm_客户表)
+  customerId: string;
+  contactName: string;       // 联系人姓名 (lookup crm_客户联系人表)
+  contactPhone: string;
   mode: "phone" | "im" | "visit";
-  summary: string;
-  ytd: number;
-  due: string;
-  charge: string;
-  col: ColId;
+  record: string;            // 跟进记录 text
+  lastContactAt: string;     // 实际跟进时间 datetime
+  nextContactAt: string;     // 下次跟进时间 datetime
+  owner: string;             // 跟进人 user
+  status: Status;            // 跟进状态 select
 };
 
-const INITIAL: FollowUp[] = [
-  { id: "1", customer: "乾盛", contact: "陈总", phone: "138-xxxx-9921", mode: "phone", summary: "确认 200 件立领大衣大货交期", ytd: 2_450_000, due: "今 16:00", charge: "李白", col: "followup" },
-  { id: "2", customer: "弘大", contact: "马经理", phone: "189-xxxx-1102", mode: "im", summary: "罗纹打底衫的辅料清单确认", ytd: 1_820_000, due: "今 11:30", charge: "李白", col: "lead" },
-  { id: "3", customer: "鸣笛", contact: "丁工", phone: "150-xxxx-7791", mode: "visit", summary: "下周一下午到访工厂看机器", ytd: 0, due: "今 14:00", charge: "刘韬", col: "contacted" },
-  { id: "4", customer: "一针坊", contact: "亚明", phone: "138-xxxx-3308", mode: "im", summary: "围巾纱线打样进度跟进", ytd: 380_000, due: "今 09:00", charge: "亚明", col: "waiting" },
-  { id: "5", customer: "巧岛", contact: "张设计", phone: "139-xxxx-5522", mode: "phone", summary: "卫衣色牢度报价被打回，重新算", ytd: 0, due: "今 17:00", charge: "刘韬", col: "followup" },
-  { id: "6", customer: "霞飞", contact: "周总", phone: "186-xxxx-2287", mode: "im", summary: "3 个月未跟进，激活一下", ytd: 96_000, due: "明 10:00", charge: "李白", col: "lead" },
-  { id: "7", customer: "乾盛", contact: "采购小张", phone: "138-xxxx-9922", mode: "phone", summary: "200 件合同的辅料清单送到", ytd: 2_450_000, due: "今 14:00", charge: "李白", col: "contacted" },
-  { id: "8", customer: "弘大", contact: "李设计", phone: "189-xxxx-1103", mode: "im", summary: "Q3 季度返单询价", ytd: 1_820_000, due: "明 16:00", charge: "李白", col: "won" },
-];
+const MODE_ICON = { phone: Phone, im: MessageCircle, visit: Calendar } as const;
 
-const MODE_ICON = {
-  phone: Phone,
-  im: MessageCircle,
-  visit: Calendar,
-};
-
-export default function FollowUpKanbanPage() {
-  const [cards, setCards] = useState<FollowUp[]>(INITIAL);
+export default function FollowUpKanbanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customer?: string; contact?: string }>;
+}) {
+  const sp = use(searchParams);
+  const initialCustomer = sp.customer ?? null;
+  const [cards, setCards] = useState<FollowUp[]>(
+    initialCustomer
+      ? getFollowups().filter((c) => c.customerId === initialCustomer)
+      : getFollowups()
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  /* 浏览器前进/后退时跟随 URL 过滤 */
+  useEffect(() => {
+    if (sp.customer) {
+      setCards(getFollowups().filter((c) => c.customerId === sp.customer));
+    }
+  }, [sp]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -85,10 +89,8 @@ export default function FollowUpKanbanPage() {
   );
 
   const byCol = useMemo(() => {
-    const m: Record<ColId, FollowUp[]> = {
-      lead: [], contacted: [], followup: [], waiting: [], won: [],
-    };
-    for (const c of cards) m[c.col].push(c);
+    const m = Object.fromEntries(COLUMNS.map((c) => [c.id, [] as FollowUp[]])) as Record<Status, FollowUp[]>;
+    for (const c of cards) m[c.status].push(c);
     return m;
   }, [cards]);
 
@@ -99,17 +101,16 @@ export default function FollowUpKanbanPage() {
     const overId = over.id as string;
     const activeCard = cards.find((c) => c.id === active.id);
     if (!activeCard) return;
-    // over a column header (id = "col:lead") or another card
-    let nextCol: ColId | null = null;
+    let nextStatus: Status | null = null;
     if (overId.startsWith("col:")) {
-      nextCol = overId.slice(4) as ColId;
+      nextStatus = overId.slice(4) as Status;
     } else {
       const overCard = cards.find((c) => c.id === overId);
-      if (overCard) nextCol = overCard.col;
+      if (overCard) nextStatus = overCard.status;
     }
-    if (!nextCol || nextCol === activeCard.col) return;
+    if (!nextStatus || nextStatus === activeCard.status) return;
     setCards((cs) =>
-      cs.map((c) => (c.id === activeCard.id ? { ...c, col: nextCol! } : c))
+      cs.map((c) => (c.id === activeCard.id ? { ...c, status: nextStatus! } : c))
     );
   };
 
@@ -119,30 +120,30 @@ export default function FollowUpKanbanPage() {
         {/* 顶部 唛头 */}
         <div className="mb-6">
           <FabricLabel
-            docNo="FOLLOWUP-KANBAN-2026-07-21"
+            docNo="FOLLOWUP-KANBAN-2026-07-22"
             shortCode="qs-app"
             season="今"
-            composition={`${cards.length} 个跟进 · ${cards.filter((c) => c.col === "followup").length} 个待回访 · ${cards.filter((c) => c.col === "won").length} 已成交`}
+            composition={`${cards.length} 个跟进 · ${cards.filter((c) => c.nextContactAt.startsWith("今")).length} 个今日到期 · ${cards.filter((c) => c.status === "签约成交" || c.status === "合作中").length} 成交`}
             specs={[
               { label: "卡片", value: cards.length, mono: true },
-              { label: "今日到期", value: cards.filter((c) => c.due.startsWith("今")).length, mono: true },
-              { label: "已成交", value: cards.filter((c) => c.col === "won").length, mono: true },
+              { label: "今日到期", value: cards.filter((c) => c.nextContactAt.startsWith("今")).length, mono: true },
+              { label: "已成交", value: cards.filter((c) => c.status === "签约成交" || c.status === "合作中").length, mono: true },
             ]}
             prices={[
-              { label: "在档客户", value: "6 家", mono: true },
-              { label: "总 YTD 流水", value: "¥ 6.5M", mono: true },
+              { label: "状态分列", value: "7", mono: true },
+              { label: "数据源", value: "crm_客户跟进记录表", mono: true },
             ]}
           />
         </div>
 
         <div className="flex items-end justify-between mb-5">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
+            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
               CRM · followup
             </p>
-            <h1 className="font-display text-[28px] font-medium tracking-tight">跟进看板</h1>
-            <p className="mt-1.5 text-[13px] text-[var(--ink-dim)] max-w-[520px]">
-              销售 pipeline 一目了然。卡可拖拽流转。今天该跟进什么？点卡片 → 跳到客户。
+            <h1 className="font-display text-[32px] font-medium tracking-tight">跟进看板</h1>
+            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
+              7 列 = crm_客户跟进记录表.跟进状态 select 选项。卡片可跨列拖拽，点击展开沟通摘要。
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -151,7 +152,6 @@ export default function FollowUpKanbanPage() {
           </div>
         </div>
 
-        {/* Kanban */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -159,13 +159,15 @@ export default function FollowUpKanbanPage() {
           onDragEnd={onDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-7 gap-2">
             {COLUMNS.map((col) => (
               <KanbanColumn
                 key={col.id}
                 col={col}
                 cards={byCol[col.id]}
                 count={byCol[col.id].length}
+                expandedId={expandedId}
+                onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
               />
             ))}
           </div>
@@ -188,39 +190,37 @@ function KanbanColumn({
   col,
   cards,
   count,
+  expandedId,
+  onToggle,
 }: {
   col: typeof COLUMNS[number];
   cards: FollowUp[];
   count: number;
+  expandedId: string | null;
+  onToggle: (id: string) => void;
 }) {
-  // 用 useDroppable 简化版 - 通过 SortableContext 注册卡片 + ColumnHeader 作为 droppable
-  // 这里用 dnd-kit 原生 useDroppable（避免引入 useDroppable 包装）
   return (
     <ColumnDropTarget id={`col:${col.id}`}>
       <div className="bg-[var(--card)] rounded-md border border-[var(--hairline)] flex flex-col min-h-[480px]">
-        <div className="px-4 py-3 border-b border-[var(--hairline)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="px-3 py-2.5 border-b border-[var(--hairline)]">
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-1.5">
               <span
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
                   background:
-                    col.tone === "neutral"
-                      ? "var(--ink-mute)"
-                      : col.tone === "info"
-                      ? "var(--info)"
-                      : col.tone === "warn"
-                      ? "var(--warn)"
-                      : col.tone === "primary"
-                      ? "var(--primary)"
-                      : "var(--success)",
+                    col.tone === "neutral" ? "var(--ink-mute)" :
+                    col.tone === "info"     ? "var(--info)" :
+                    col.tone === "primary"  ? "var(--primary)" :
+                    col.tone === "success"  ? "var(--success)" :
+                                               "var(--warn)",
                 }}
               />
-              <span className="font-display text-[14px] font-medium">{col.label}</span>
-              <span className="font-mono text-[10px] text-[var(--ink-mute)] tnum">
-                {count}
-              </span>
+              <span className="font-display text-[18px] font-medium">{col.label}</span>
             </div>
+            <span className="font-mono text-[14px] text-[var(--ink-mute)] tnum">
+              {count}
+            </span>
           </div>
         </div>
 
@@ -230,10 +230,15 @@ function KanbanColumn({
         >
           <div className="flex-1 p-2 space-y-2 min-h-0">
             {cards.map((c) => (
-              <SortableCard key={c.id} c={c} />
+              <SortableCard
+                key={c.id}
+                c={c}
+                expanded={expandedId === c.id}
+                onToggle={() => onToggle(c.id)}
+              />
             ))}
             {cards.length === 0 && (
-              <div className="text-center text-[11px] font-mono text-[var(--ink-mute)] py-8">
+              <div className="text-center text-[14px] font-mono text-[var(--ink-mute)] py-8">
                 空
               </div>
             )}
@@ -249,7 +254,9 @@ function ColumnDropTarget({ id, children }: { id: string; children: React.ReactN
   return <div ref={setNodeRef} className="h-full">{children}</div>;
 }
 
-function SortableCard({ c }: { c: FollowUp }) {
+function SortableCard({
+  c, expanded, onToggle,
+}: { c: FollowUp; expanded: boolean; onToggle: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: c.id });
 
@@ -261,7 +268,12 @@ function SortableCard({ c }: { c: FollowUp }) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card c={c} dragHandleProps={{ ...attributes, ...listeners }} />
+      <Card
+        c={c}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        expanded={expanded}
+        onToggle={onToggle}
+      />
     </div>
   );
 }
@@ -270,16 +282,21 @@ function Card({
   c,
   dragHandleProps,
   dragging = false,
+  expanded = false,
+  onToggle,
 }: {
   c: FollowUp;
   dragHandleProps?: Record<string, unknown>;
   dragging?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
 }) {
-  const ModeIcon = MODE_ICON[c.mode];
+  const ModeIcon = c.mode ? MODE_ICON[c.mode] : MessageCircle;
+  const overdue = c.nextContactAt.startsWith("今");
   return (
     <div
       className={cn(
-        "group rounded-md border bg-[var(--card)] p-3 cursor-pointer",
+        "group rounded-md border bg-[var(--card)] p-2.5",
         "hover:border-[var(--primary)] transition-colors",
         dragging ? "border-[var(--primary)] shadow-2xl rotate-1" : "border-[var(--hairline)]"
       )}
@@ -294,33 +311,61 @@ function Card({
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-              {c.customer}
+            <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] truncate">
+              {c.customer}{c.customerId ? ` · ${c.customerId.slice(5)}` : ""}
             </span>
-            <ModeIcon className="w-3 h-3 text-[var(--ink-dim)]" />
+            <ModeIcon className="w-3 h-3 text-[var(--ink-dim)] shrink-0" />
           </div>
-          <p className="text-[13px] font-medium text-[var(--ink)] leading-snug mb-2 line-clamp-2">
-            {c.summary}
+          <p className="text-[14px] font-medium text-[var(--ink)] leading-snug mb-2 line-clamp-2">
+            {c.record}
           </p>
-          <div className="flex items-center justify-between text-[10px] font-mono text-[var(--ink-mute)]">
-            <span className="truncate">{c.contact} · {c.phone.slice(-4)}</span>
-            <span
-              className={cn(
-                "shrink-0 ml-2 font-medium",
-                c.due.startsWith("今") && c.due.includes("已") === false
-                  ? "text-[var(--warn)]"
-                  : "text-[var(--ink-dim)]"
-              )}
+
+          {/* 紧凑视图：联系人 + 下次跟进 */}
+          <div className="flex items-center justify-between text-[14px] font-mono text-[var(--ink-mute)]">
+            <span className="truncate">{c.contactName}{c.contactPhone ? ` · ${c.contactPhone.slice(-4)}` : ""}</span>
+            <span className={cn("shrink-0 ml-2 font-medium", overdue ? "text-[var(--warn)]" : "text-[var(--ink-dim)]")}>
+              {c.nextContactAt}
+            </span>
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between text-[14px] font-mono">
+            <span className="text-[var(--ink-mute)]">{c.owner}</span>
+            <button
+              onClick={onToggle}
+              className="text-[var(--ink-mute)] hover:text-[var(--ink)] inline-flex items-center gap-0.5"
+              aria-label={expanded ? "收起详情" : "展开详情"}
             >
-              {c.due}
-            </span>
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
           </div>
-          <div className="mt-2 flex items-center justify-between text-[10px] font-mono">
-            <span className="text-[var(--ink-mute)]">{c.charge}</span>
-            <span className="text-[var(--ink)] tnum">
-              ¥{(c.ytd / 10000).toFixed(1)}w
-            </span>
-          </div>
+
+          {/* 展开视图：跟进摘要 / 实际跟进时间 / 联系人姓名 / 关联客户 */}
+          {expanded && (
+            <div className="mt-2 pt-2 border-t border-[var(--hairline)] space-y-1.5 font-mono text-[14px]">
+              <div className="flex justify-between">
+                <span className="text-[var(--ink-mute)]">实际跟进时间</span>
+                <span className="text-[var(--ink-dim)]">{c.lastContactAt}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--ink-mute)]">下次约定</span>
+                <span className={cn(overdue ? "text-[var(--warn)] font-medium" : "text-[var(--ink-dim)]")}>
+                  {c.nextContactAt}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--ink-mute)]">联系人</span>
+                <span className="text-[var(--ink-dim)] truncate ml-2">{c.contactName} · {c.contactPhone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--ink-mute)]">客户</span>
+                <span className="text-[var(--ink-dim)]">{c.customer}</span>
+              </div>
+              <div className="pt-1 border-t border-[var(--hairline)]/50">
+                <p className="text-[var(--ink-mute)] mb-0.5">跟进摘要</p>
+                <p className="text-[14px] text-[var(--ink)] leading-relaxed">{c.record}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
