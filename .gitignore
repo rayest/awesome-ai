@@ -19,3 +19,6 @@
 **/skills/
 **/pnpm-lock.yaml
 **/tsconfig.tsbuildinfo
+apps/auron-web/next-env.d.ts
+apps/auron-web/pnpm-lock.yaml
+apps/auron-web/tsconfig.tsbuildinfo
