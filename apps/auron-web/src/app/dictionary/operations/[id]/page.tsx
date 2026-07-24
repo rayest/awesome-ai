@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import {
   getOperations,
   getDyeings,
@@ -91,10 +92,11 @@ function DetailPageInner({ op }: { op: any }) {
             <Row label="工序 ID" value={op.id as any} source="auto_number" mono />
             <Row label="阶段" value={op.phase as any} source="" mono />
             <Row label="细分类目" value={
-              <select value={String(v.category ?? op.category)} onChange={(e) => upd("category", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["前道 - 复合", "前道 - 拉毛", "染整 - 缸染", "染整 - 浸染", "染整 - 整染", "缝制 - 平缝", "缝制 - 锁边", "缝制 - 整烫", "复合 - 复合"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.category ?? op.category)}
+                onValueChange={(value) => upd("category", value)}
+                options={["前道 - 复合", "前道 - 拉毛", "染整 - 缸染", "染整 - 浸染", "染整 - 整染", "缝制 - 平缝", "缝制 - 锁边", "缝制 - 整烫", "复合 - 复合"].map((value) => ({ value, label: value }))}
+              />
             } source="text" />
             <Row label="工序名" value={
               <input value={String(v.name ?? op.name)} onChange={(e) => upd("name", e.target.value)}

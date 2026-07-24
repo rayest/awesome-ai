@@ -70,7 +70,7 @@ export default function FollowupDetail({ params }: { params: Promise<{ id: strin
         <div className="mb-6">
           <FabricLabel
             docNo={`FOLLOWUP-${f.id}`}
-            shortCode={f.customerId.replace("CUST-", "")}
+            shortCode={f.customerId?.replace("CUST-", "") ?? f.id}
             season={f.status}
             composition={`${f.customer} / ${f.contactName} / ${f.mode === "phone" ? "电话" : f.mode === "im" ? "微信" : "面访"}`}
             specs={[
@@ -137,8 +137,8 @@ function BaseFields({ f }: { f: Followup }) {
           <FieldRow label="下次跟进时间" value={f.nextContactAt} mono source="datetime" />
           <FieldRow label="跟进记录" value={f.record} />
         </div>
-        <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-3 leading-relaxed">
-          ⚠ 联系人 ID 是 link 字段（双向）— 联系人和跟进双向跳转。
+        <p className="text-[14px] text-[var(--ink-mute)] mt-3 leading-relaxed">
+          可从联系人姓名直接进入联系人档案，便于查看历史沟通和客户关系。
         </p>
       </div>
     </section>
@@ -170,11 +170,11 @@ function Actions({ f }: { f: Followup }) {
     <section>
       <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">操作</p>
       <div className="space-y-2">
-        <a href={`tel:${f.contactPhone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-3 border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
+        <a href={f.contactPhone ? `tel:${f.contactPhone.replace(/[^\d+]/g, "")}` : "#"} className="flex items-center gap-3 border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
           <span className="w-8 h-8 rounded-full bg-[var(--success)] text-white flex items-center justify-center"><Phone className="w-4 h-4" /></span>
           <div>
             <p className="text-[14px] font-medium text-[var(--ink)]">立即拨号</p>
-            <p className="font-mono text-[14px] text-[var(--ink-mute)]">{f.contactPhone}</p>
+            <p className="font-mono text-[14px] text-[var(--ink-mute)]">{f.contactPhone ?? "—"}</p>
           </div>
         </a>
         <button className="w-full flex items-center gap-3 border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">

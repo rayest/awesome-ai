@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getParts } from "@/lib/data";
@@ -21,42 +20,19 @@ export default function PartsPage() {
   const all = getParts();
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="测量部位"
+      pageKicker="字典维护"
+      pageDescription="维护衣长、袖长、肩宽等测量部位，工艺单的尺寸要求从这里选择。"
+      pageActions={(
+        <Link href="/dictionary/parts/new">
+          <Button variant="default" size="md">新增部位</Button>
+        </Link>
+      )}
+      pageMeta={[{ label: "部位", value: all.length }]}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DICT-PARTS-2026-07-22"
-            shortCode="qs-app"
-            season="在档"
-            composition={`${all.length} 个测量部位`}
-            specs={[
-              { label: "总部位", value: all.length, mono: true },
-              { label: "字段数", value: "2 / 2", mono: true },
-            ]}
-            prices={[
-              { label: "数据源", value: "crm_字典_部位配置表", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DICT · part
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">测量部位</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              衣长 / 袖长 / 肩宽 ... 工艺单的尺寸要求表就是从这些部位里选。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/dictionary/parts/new">
-              <Button variant="default" size="md">+ 新增部位</Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
           <Input
             placeholder="搜部位..."
             value={q}

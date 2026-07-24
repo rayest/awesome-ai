@@ -26,7 +26,7 @@ export default function NewComponentPage() {
     <AdminShell>
       <EntityForm
         title="新增部件"
-        subtitle="一件衣服由哪些裁片组成 — 前片/后片/袖/领/口袋。crm_字典_部件配置表 · 写入 5 字段"
+        subtitle="定义前片、后片、袖、领和口袋等部件，让工艺描述和用料拆分保持一致。"
         backUrl="/dictionary/components"
         backLabel="部件配置"
         fields={FIELDS}
@@ -39,7 +39,8 @@ export default function NewComponentPage() {
             description: `${values.location} · ${values.name} · ${values.isPart === "是" ? "主片" : "辅料位"}`,
             duration: 4000,
           });
-          router.push(`/dictionary/components/${newId}`);
+          console.info("【部件字典】部件已保存，返回列表", { 部件编号: newId, 部件名称: values.name });
+          router.push("/dictionary/components");
         }}
       />
     </AdminShell>

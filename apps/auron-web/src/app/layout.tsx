@@ -22,11 +22,17 @@ const serif = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Auron — 工坊协作",
-  description: "Auron · 针织服装厂的工坊 ERP",
+  title: "海豚服装智造",
+  description: "面向服装工厂的订单、打样、报价与客户协作系统",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+  drawer,
+}: {
+  children: React.ReactNode;
+  drawer: React.ReactNode;
+}) {
   return (
     <html
       lang="zh-CN"
@@ -34,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="bg-background text-foreground antialiased">
         {children}
+        {drawer}
         <Toaster
           position="bottom-right"
           theme="light"

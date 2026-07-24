@@ -21,7 +21,7 @@ export default function NewTrimPage() {
     <AdminShell>
       <EntityForm
         title="新增辅料"
-        subtitle="树脂衬 / 拉链 / 纽扣 / 织带 / 吊牌 ... 一件成衣的所有辅料。crm_字典_辅料配置表 · 写入 2 字段"
+        subtitle="维护树脂衬、拉链、纽扣、织带和吊牌等辅料，供打样与报价直接选择。"
         backUrl="/dictionary/trims"
         backLabel="辅料配置"
         fields={FIELDS}
@@ -34,7 +34,8 @@ export default function NewTrimPage() {
             description: `${values.name}`,
             duration: 4000,
           });
-          router.push(`/dictionary/trims/${newId}`);
+          console.info("【辅料字典】辅料已保存，返回列表", { 辅料编号: newId, 辅料名称: values.name });
+          router.push("/dictionary/trims");
         }}
       />
     </AdminShell>

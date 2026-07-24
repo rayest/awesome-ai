@@ -5,7 +5,9 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
+import { ProcessRail } from "@/components/domain/workflow-list";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -51,9 +53,9 @@ export default function SampleNoticeDetail({ params }: { params: Promise<{ id: s
             docNo="SMPL-2026-0317-A"
             shortCode="CUST-QS-001"
             season="Q3-26"
-            composition="60% 澳毛 80s · 40% 长绒棉 60s · 320 GSM · 18G 双面"
+            composition="60% 澳毛 80s · 40% 长绒棉 60s · 320 克重 · 18G 双面"
             specs={[
-              { label: "GSM", value: 320, mono: true },
+              { label: "克重", value: 320, mono: true },
               { label: "针数", value: "18G", mono: true },
               { label: "颜色", value: "炭灰", mono: true },
               { label: "染色", value: "缸染低温", mono: true },
@@ -91,17 +93,27 @@ export default function SampleNoticeDetail({ params }: { params: Promise<{ id: s
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="md">打回</Button>
-            <Button variant="outline" size="md">复制上版</Button>
-            <Button variant="default" size="md">推进至下一道</Button>
+            <Button variant="outline" size="md">填写原因并退回</Button>
+            <Button variant="outline" size="md">复制为新通知</Button>
+            <Link href={`/orders/sample-workorders/new?notice=${id}`}>
+              <Button variant="default" size="md">创建工艺单</Button>
+            </Link>
           </div>
         </div>
+
+        <ProcessRail
+          steps={[
+            { label: "打样通知", detail: "业务要求已确认并通知工坊", state: "done" },
+            { label: "打样工艺", detail: "当前等待创建或完善工艺单", state: "current" },
+            { label: "报价确认", detail: "工艺审核后生成客户报价", state: "next" },
+          ]}
+        />
 
         {/* Tabs */}
         <Tabs defaultValue="notice">
           <TabsList>
-            <TabsTrigger value="notice" count={27}>
-              通知基础信息
+            <TabsTrigger value="notice">
+              打样要求
             </TabsTrigger>
             <TabsTrigger value="size" count={9}>
               成品尺寸
@@ -143,7 +155,7 @@ export default function SampleNoticeDetail({ params }: { params: Promise<{ id: s
           <TabsContent value="quote">
             <EmptyState
               title="尚未生成报价"
-              hint="只有产生报价后，系统才会写入客户档案与产品主数据。"
+              hint="工艺审核完成后，可基于已确认的成本和参数创建报价。"
               action={<Link href="/orders/quotations/new"><Button variant="default" size="md">生成报价 →</Button></Link>}
             />
           </TabsContent>
@@ -155,7 +167,7 @@ export default function SampleNoticeDetail({ params }: { params: Promise<{ id: s
 
 /* ─── Subcomponents ─── */
 
-function FieldRow({ label, value, mono, source }: { label: string; value: ReactNode; mono?: boolean; source?: string }) {
+function FieldRow({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean; source?: string }) {
   return (
     <div className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
       <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[140px] flex items-center justify-between pr-2">
@@ -164,18 +176,13 @@ function FieldRow({ label, value, mono, source }: { label: string; value: ReactN
       <span className={cn("text-[14px] text-[var(--ink)]", mono && "font-mono tnum")}>
         {value}
       </span>
-      {source && (
-        <span className="font-mono text-[14px] text-[var(--ink-mute)] ml-auto" title={source}>
-          {source}
-        </span>
-      )}
     </div>
   );
 }
 
 function FieldGrid({ fields }: { fields: Array<{ label: string; value: ReactNode; mono?: boolean; source?: string }> }) {
   return (
-    <div className="grid grid-cols-2 gap-x-12">
+    <div className="grid gap-x-12 lg:grid-cols-2">
       {fields.map((f, i) => (
         <FieldRow key={i} label={f.label} value={f.value} mono={f.mono} source={f.source} />
       ))}
@@ -231,17 +238,9 @@ function NoticeBaseFields() {
 /* ─── 关联基 Banner ─── */
 function BaseLinkBanner({ noticeId, table }: { noticeId: string; table: string }) {
   return (
-    <div className="border border-[var(--hairline)] rounded-md px-3 py-2 bg-[var(--card)] flex items-center justify-between text-[14px] font-mono">
-      <div className="flex items-center gap-2">
-        <span className="px-1.5 py-0.5 rounded border border-[var(--primary)] text-[var(--primary)]">link</span>
-        <span className="text-[var(--ink-mute)]">写入</span>
-        <span className="text-[var(--ink)]">{table}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--ink-mute)]">关联基 →</span>
-        <span className="text-[var(--ink)]">crm_打样通知_基础信息表</span>
-        <code className="px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--ink)]">{noticeId}</code>
-      </div>
+    <div className="flex items-center justify-between rounded-md border border-[var(--hairline)] bg-[var(--card)] px-3 py-2 text-[13px]">
+      <span className="text-[var(--ink-dim)]">{table.includes("尺寸") ? "成品尺寸要求" : "本次打样辅料"}</span>
+      <span className="font-mono text-[var(--ink-mute)]">关联通知 {noticeId}</span>
     </div>
   );
 }
@@ -291,24 +290,20 @@ function SizeTable({ noticeId }: { noticeId: string }) {
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="grid grid-cols-[60px_1fr_100px_120px_120px_1fr_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
           <div>序号</div>
-          <div>部位 · 来自 crm_字典_部位配置表</div>
-          <div>尺码 · 来自 crm_字典_尺码配置表</div>
+          <div>部位 · 从测量部位中选择</div>
+          <div>尺码 · 从尺码配置中选择</div>
           <div className="text-right">尺寸 (cm)</div>
           <div className="text-right">公差</div>
-          <div>聚合 (formula F4)</div>
+          <div>保存后自动汇总</div>
           <div></div>
         </div>
         {rows.map((r, i) => (
           <div key={r.id} className="grid grid-cols-[60px_1fr_100px_120px_120px_1fr_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
             <div className="text-[var(--ink-mute)]">{String(i + 1).padStart(2, "0")}</div>
-            <select value={r.part} onChange={(e) => update(r.id, { part: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {partOptions.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <select value={r.size} onChange={(e) => update(r.id, { size: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {sizeOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <SelectControl value={r.part} onValueChange={(value) => update(r.id, { part: value })}
+              options={partOptions.map((value) => ({ value, label: value }))} />
+            <SelectControl value={r.size} onValueChange={(value) => update(r.id, { size: value })}
+              options={sizeOptions.map((value) => ({ value, label: value }))} />
             <input type="number" step={0.5} min={0} value={r.value}
               onChange={(e) => update(r.id, { value: Number(e.target.value) })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
@@ -326,8 +321,7 @@ function SizeTable({ noticeId }: { noticeId: string }) {
       </div>
 
       <div className="border border-dashed border-[var(--hairline-strong)] rounded-md p-3 text-[14px] font-mono text-[var(--ink-mute)]">
-        💾 点「保存」将 {rows.length} 行写入 crm_打样通知_成品尺寸表，
-        每条记录的 <span className="text-[var(--ink)]">noticeId</span> 自动 link 到 crm_打样通知_基础信息表.{noticeId}。
+        保存后会更新本通知的 {rows.length} 条成品尺寸要求，并自动生成尺寸摘要。
       </div>
     </div>
   );
@@ -373,30 +367,26 @@ function AccessoryTable({ noticeId }: { noticeId: string }) {
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="grid grid-cols-[60px_1fr_100px_80px_80px_100px_1fr_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
           <div>编号</div>
-          <div>辅料名称 · 来自 crm_字典_辅料配置表</div>
+          <div>辅料名称 · 从辅料配置中选择</div>
           <div>规格</div>
           <div className="text-right">数量</div>
           <div>单位</div>
           <div>颜色</div>
-          <div>辅料聚合 (formula F5)</div>
+          <div>保存后自动汇总</div>
           <div></div>
         </div>
         {rows.map((r, i) => (
           <div key={r.id} className="grid grid-cols-[60px_1fr_100px_80px_80px_100px_1fr_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
             <div className="text-[var(--ink-mute)]">{String(i + 1).padStart(3, "0")}</div>
-            <select value={r.name} onChange={(e) => update(r.id, { name: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {trimOptions.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <SelectControl value={r.name} onValueChange={(value) => update(r.id, { name: value })}
+              options={trimOptions.map((value) => ({ value, label: value }))} />
             <input value={r.spec} onChange={(e) => update(r.id, { spec: e.target.value })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
             <input type="number" min={0} step={1} value={r.qty}
               onChange={(e) => update(r.id, { qty: Number(e.target.value) })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
-            <select value={r.unit} onChange={(e) => update(r.id, { unit: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {["片", "条", "卷", "颗", "个", "套", "米"].map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
+            <SelectControl value={r.unit} onValueChange={(value) => update(r.id, { unit: value })}
+              options={["片", "条", "卷", "颗", "个", "套", "米"].map((value) => ({ value, label: value }))} />
             <input value={r.color} onChange={(e) => update(r.id, { color: e.target.value })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
             <div className="text-[var(--ink)]">
@@ -413,8 +403,7 @@ function AccessoryTable({ noticeId }: { noticeId: string }) {
       </div>
 
       <div className="border border-dashed border-[var(--hairline-strong)] rounded-md p-3 text-[14px] font-mono text-[var(--ink-mute)]">
-        💾 点「保存」将 {rows.length} 行写入 crm_打样通知_辅料表，
-        每条记录的 <span className="text-[var(--ink)]">noticeId</span> 自动 link 到 crm_打样通知_基础信息表.{noticeId}。
+        保存后会更新本通知的 {rows.length} 条辅料要求，并自动生成用料摘要。
       </div>
     </div>
   );

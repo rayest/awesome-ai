@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   useCurrentUser,
@@ -54,52 +55,18 @@ export default function InboxPage() {
   })();
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="通知中心"
+      pageKicker="我的工作"
+      pageDescription="集中查看待处理消息、业务提醒和系统通知，减少在不同模块之间来回查找。"
+      pageActions={(
+        <Button variant="outline" size="md" onClick={markAllRead} disabled={unread === 0}>
+          {unread === 0 ? "已全部处理" : `全部标为已读 · ${unread}`}
+        </Button>
+      )}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="INBOX-2026-07-22"
-            shortCode="qs-app"
-            season={me.role}
-            composition={`${activities.length} 条活动 · ${unread} 条未读 · 当前角色 ${me.role} · ${me.name}`}
-            specs={[
-              { label: "总活动", value: activities.length, mono: true },
-              { label: "未读", value: unread, mono: true },
-              { label: "@我", value: mentioned.length, mono: true },
-              { label: "我的", value: mine.length, mono: true },
-            ]}
-            prices={[
-              { label: "跨表源", value: "5 张 crm_*", mono: true },
-              { label: "聚合范围", value: "按角色过滤", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">/inbox</p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">通知中心</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              跨 5 张 crm_* 表的活动聚合，三段分组：<span className="text-[var(--warn)] font-medium">@我</span> · 我的客户/工单动态 · 全局动态
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => markAllRead()}
-              className="h-9 px-4 rounded-md text-[14px] border border-[var(--hairline-strong)] hover:bg-[var(--accent)] transition-colors text-[var(--ink-dim)]"
-            >
-              全部标为已读
-            </button>
-            <Link
-              href="/me"
-              className="h-9 px-4 rounded-md text-[14px] inline-flex items-center bg-[var(--ink)] text-[var(--background)] hover:bg-[var(--accent-foreground)] transition-colors"
-            >
-              跳到 /me
-            </Link>
-          </div>
-        </div>
-
-        {/* 1 · @我 */}
+                {/* 1 · @我 */}
         <Section title={`@我 · 待我处理`} count={`${mentioned.length} 条`} tone="primary">
           {mentioned.length === 0 ? (
             <Empty msg="目前没有需要你处理的事" />
@@ -118,9 +85,6 @@ export default function InboxPage() {
           <ActivityList items={activities.filter((a) => !mentioned.includes(a) && !mine.includes(a)).slice(0, 12)} />
         </Section>
 
-        <p className="mt-6 text-[14px] font-mono text-[var(--ink-mute)] text-center">
-          数据源 · 聚合自 crm_客户跟进 / crm_报价单_总计 / crm_打样通知_基础 / crm_打样工艺单_基础 / crm_人员信息
-        </p>
       </div>
     </AdminShell>
   );
@@ -140,7 +104,7 @@ function Section({
           <p className="font-display text-[18px] font-medium text-[var(--ink)]">{title}</p>
           {tone === "primary" && (
             <span className="font-mono text-[14px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
-              HIGH
+              优先
             </span>
           )}
         </div>
@@ -162,14 +126,14 @@ function Empty({ msg }: { msg: string }) {
 function ActivityList({ items, highlight = false }: { items: Activity[]; highlight?: boolean }) {
   if (items.length === 0) return <Empty msg="没有数据" />;
   return (
-    <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
+    <div className="overflow-x-auto rounded-md border border-[var(--hairline)] bg-[var(--card)]">
       {items.map((a) => (
         <Link
           key={a.id}
           href={a.href}
           onClick={() => { if (!a.read) markRead(a.id); }}
           className={cn(
-            "grid grid-cols-[60px_40px_1fr_100px_120px_60px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors",
+            "grid min-w-[900px] grid-cols-[60px_40px_minmax(0,1fr)_100px_120px_60px_20px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors",
             !a.read && "bg-[var(--accent)]/20"
           )}
         >
@@ -180,7 +144,7 @@ function ActivityList({ items, highlight = false }: { items: Activity[]; highlig
           <div className="min-w-0">
             <p className={cn("text-[14px] truncate", !a.read ? "text-[var(--ink)] font-medium" : "text-[var(--ink-dim)]")}>
               {a.whoName} ·
-              {a.kind === "audit" && <span className="text-[var(--warn)] font-medium"> [字段级] </span>}
+              {a.kind === "audit" && <span className="text-[var(--warn)] font-medium"> [敏感修改] </span>}
               {a.summary}
             </p>
             {a.customerName && (
@@ -197,6 +161,7 @@ function ActivityList({ items, highlight = false }: { items: Activity[]; highlig
           <span className={cn("font-mono text-[14px] uppercase tracking-[0.18em] text-center", a.read ? "text-[var(--ink-mute)]" : "text-[var(--primary)]")}>
             {a.read ? "已读" : "新"}
           </span>
+          <ArrowRight className="h-3.5 w-3.5 text-[var(--ink-mute)]" />
         </Link>
       ))}
     </div>

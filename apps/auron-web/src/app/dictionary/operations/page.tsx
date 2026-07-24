@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,43 +35,18 @@ export default function OperationsPage() {
   const cats = Array.from(new Set(all.map((o) => o.category.split(" - ")[0])));
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="工序字典"
+      pageKicker="字典维护"
+      pageDescription="维护织造、缝制、整烫等工序，供工艺单和报价拆分使用。"
+      pageActions={(
+        <Link href="/dictionary/operations/new">
+          <Button variant="default" size="md">新增工序</Button>
+        </Link>
+      )}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DICT-OPERATIONS-2026-07-22"
-            shortCode="qs-app"
-            season="在档"
-            composition={`${all.length} 道工序 · ${cats.length} 个工艺阶段`}
-            specs={[
-              { label: "总工序", value: all.length, mono: true },
-              { label: "工艺阶段", value: cats.length, mono: true },
-              { label: "字段数", value: "3 / 3", mono: true },
-            ]}
-            prices={[
-              { label: "数据源", value: "crm_字典_工序表", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DICT · operation
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">工序字典</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              报价单里的「染整 + 缝制 + 辅料 + 其他费用」就是从这张表挑出来的。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/dictionary/operations/new">
-              <Button variant="default" size="md">+ 新增工序</Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
           <Input
             placeholder="搜工序 / 阶段 / 编号..."
             value={q}

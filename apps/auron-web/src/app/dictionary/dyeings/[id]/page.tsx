@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import {
   getOperations,
   getDyeings,
@@ -95,20 +96,22 @@ function DetailPageInner({ op }: { op: any }) {
                 className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full" />
             } source="text" />
             <Row label="分类" value={
-              <select value={String(v.category ?? op.category)} onChange={(e) => upd("category", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["标准染色", "特殊染色", "染整", "印花"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.category ?? op.category)}
+                onValueChange={(value) => upd("category", value)}
+                options={["标准染色", "特殊染色", "染整", "印花"].map((value) => ({ value, label: value }))}
+              />
             } source="select 标准/特殊" />
             <Row label="单价" value={
               <input value={String(v.price ?? op.price)} onChange={(e) => upd("price", e.target.value)}
                 className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full" />
             } source="text" />
             <Row label="计费方式" value={
-              <select value={String(v.pricingMode ?? op.pricingMode)} onChange={(e) => upd("pricingMode", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["按kg", "按件", "按米", "按匹"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.pricingMode ?? op.pricingMode)}
+                onValueChange={(value) => upd("pricingMode", value)}
+                options={["按公斤", "按件", "按米", "按匹"].map((value) => ({ value, label: value }))}
+              />
             } source="text" />
           </div>
         </div>

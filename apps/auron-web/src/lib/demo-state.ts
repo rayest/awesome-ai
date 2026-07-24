@@ -34,6 +34,22 @@ export type DemoUser = {
   initials: string;
 };
 
+export const ROLE_LABELS: Record<Role, string> = {
+  OWNER: "老板",
+  DIRECTOR: "厂长",
+  ADMIN: "管理员",
+  SALES: "业务员",
+  ORDER: "业务跟单",
+  KNIT_MASTER: "前道师傅",
+  SEW_MASTER: "后道师傅",
+  QUOTER: "报价员",
+  VIEWER: "只读访客",
+};
+
+export function getRoleLabel(role: Role) {
+  return ROLE_LABELS[role] ?? role;
+}
+
 /* ——— 从 position 字段（"老板 / OWNER"）提取 role 枚举 —— */
 function extractRole(position: string): Role {
   const m = position.match(/\b(OWNER|DIRECTOR|ADMIN|SALES|ORDER|KNIT_MASTER|SEW_MASTER|QUOTER|VIEWER)\b/);
@@ -71,9 +87,9 @@ export type Tenant = {
  * 现在 mock 3 家，docs/data/ 没有 crm_租户表（crm 暂未涵盖多租户建模）
  */
 export const TENANTS: Tenant[] = [
-  { key: "qs-app",   name: "乾盛服饰",     shortCode: "qs-app",   tone: "primary" },
-  { key: "hd-app",   name: "弘大针织",     shortCode: "hd-app",   tone: "info"    },
-  { key: "yx-app",   name: "一针坊",       shortCode: "yx-app",   tone: "success" },
+  { key: "qs-app",   name: "乾盛服饰",     shortCode: "乾盛",   tone: "primary" },
+  { key: "hd-app",   name: "弘大针织",     shortCode: "弘大",   tone: "info"    },
+  { key: "yx-app",   name: "一针坊",       shortCode: "一针坊", tone: "success" },
 ];
 
 export const DEFAULT_TENANT = TENANTS[0];
@@ -102,6 +118,9 @@ export type Activity = {
   mentions?: ("OWNER" | "DIRECTOR" | Role)[];
 };
 
+// 演示活动使用固定参考时间，保证服务端与浏览器首屏排序完全一致。
+const DEMO_REFERENCE_TIME = Date.UTC(2026, 6, 23, 17, 12);
+
 /* 真实后端阶段：这些跨表活动应该来自 crm_* 的"修改日志"（crm_字段 level audit log）
  * 当前 mock 是从真业务场景人工合成的演示态。等后端 audit log 模块就绪就替换。 */
 export const MOCK_ACTIVITIES: Activity[] = [
@@ -118,7 +137,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
 ];
 
 function hoursAgo(h: number) {
-  return Date.now() - h * 60 * 60 * 1000;
+  return DEMO_REFERENCE_TIME - h * 60 * 60 * 1000;
 }
 
 /* ——— Store ——— */
@@ -179,6 +198,12 @@ function save(s: State) {
 }
 
 let _state: State = load();
+const SERVER_STATE_SNAPSHOT: State = {
+  currentUserKey: DEFAULT_USER.key,
+  currentTenantKey: DEFAULT_TENANT.key,
+  reads: {},
+  activities: MOCK_ACTIVITIES,
+};
 
 export function getState(): State {
   return _state;
@@ -215,28 +240,29 @@ export function markAllRead() {
 }
 
 export function useCurrentUser(): DemoUser {
-  useSyncExternalStore(
+  return useSyncExternalStore(
     (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
-    () => getCurrentUser()
+    () => getCurrentUser(),
+    () => DEFAULT_USER
   );
-  return getCurrentUser();
 }
 
 export function useCurrentTenant(): Tenant {
-  useSyncExternalStore(
+  return useSyncExternalStore(
     (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
-    () => getCurrentTenant()
+    () => getCurrentTenant(),
+    () => DEFAULT_TENANT
   );
-  return getCurrentTenant();
 }
 
 export function useActivities(): { activities: Activity[]; unread: number } {
-  useSyncExternalStore(
+  const state = useSyncExternalStore(
     (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
-    () => getState()
+    () => getState(),
+    () => SERVER_STATE_SNAPSHOT
   );
-  const list = getState().activities
-    .map((a) => ({ ...a, read: a.read || getState().reads[a.id] === true }))
+  const list = state.activities
+    .map((a) => ({ ...a, read: a.read || state.reads[a.id] === true }))
     .sort((a, b) => b.atMs - a.atMs);
   const unread = list.filter((a) => !a.read).length;
   return { activities: list, unread };

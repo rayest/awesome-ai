@@ -12,12 +12,12 @@ import { EntityForm, type FieldDef } from "@/components/domain/create-form";
  */
 
 const CATEGORIES = ["标准染色", "特殊染色", "染整", "印花"];
-const PRICING_MODES = ["按kg", "按件", "按米", "按匹"];
+const PRICING_MODES = ["按公斤", "按件", "按米", "按匹"];
 
 const FIELDS: FieldDef[] = [
   { name: "name",        label: "染色工艺名", type: "text",   required: true, placeholder: "如：缸染低温", source: "text" },
   { name: "category",    label: "分类",       type: "select", required: true, options: CATEGORIES, source: "select 标准/特殊" },
-  { name: "price",       label: "单价",       type: "text",   required: true, placeholder: "如：8.4元/kg", source: "text" },
+  { name: "price",       label: "单价",       type: "text",   required: true, placeholder: "如：8.4元/公斤", source: "text" },
   { name: "pricingMode", label: "计费方式",   type: "select", required: true, options: PRICING_MODES, source: "text" },
 ];
 
@@ -27,7 +27,7 @@ export default function NewDyeingPage() {
     <AdminShell>
       <EntityForm
         title="新增染色工艺"
-        subtitle="缸染低温 / 成衣染 / 整染 / 色牢度等级 ... 报价的「染整费用」都从这张表里挑。crm_字典_染色工艺信息表 · 写入 5 字段"
+        subtitle="维护缸染、成衣染和整染等染色方案及标准费用，供工艺与报价复用。"
         backUrl="/dictionary/dyeings"
         backLabel="染色工艺"
         fields={FIELDS}
@@ -40,7 +40,8 @@ export default function NewDyeingPage() {
             description: `${values.name} · ${values.price} · ${values.pricingMode}`,
             duration: 4000,
           });
-          router.push(`/dictionary/dyeings/${newId}`);
+          console.info("【染色工艺】工艺已保存，返回列表", { 工艺编号: newId, 工艺名称: values.name });
+          router.push("/dictionary/dyeings");
         }}
       />
     </AdminShell>

@@ -5,6 +5,7 @@
 **/node_modules/
 **/node_modules
 **/.next/
+**/.next-build/
 **/.velite/
 **/.agents/
 **/.claude/
@@ -16,3 +17,5 @@
 **/.windsurf/
 **/.zcode/
 **/skills/
+**/pnpm-lock.yaml
+**/tsconfig.tsbuildinfo

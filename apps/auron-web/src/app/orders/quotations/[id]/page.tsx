@@ -5,7 +5,9 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
+import { ProcessRail } from "@/components/domain/workflow-list";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { getQuote, getDyeings, getOperations, getTrims } from "@/lib/data";
@@ -120,7 +122,7 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
             ]}
             delivery={[
               { label: "有效期", value: q?.validUntil ?? "—", mono: true },
-              { label: "状态", value: q?.status ?? "—", mono: true },
+              { label: "状态", value: q?.status ?? (id === "Q-2026-0317-A" ? "已发" : "草稿"), mono: true },
               { label: "报价员", value: q?.quoter ?? "李白", mono: true },
               { label: "更新", value: q?.updated ?? "今 09:14", mono: true },
             ]}
@@ -137,16 +139,24 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="md">复制上版</Button>
+            <Button variant="outline" size="md">复制为新报价</Button>
             <Button variant="outline" size="md">导出 PDF</Button>
-            <Button variant="outline" size="md">截图给客户</Button>
-            <Button variant="default" size="md">发送报价</Button>
+            <Button variant="outline" size="md">生成客户预览</Button>
+            <Button variant="default" size="md">发送给客户确认</Button>
           </div>
         </div>
 
+        <ProcessRail
+          steps={[
+            { label: "打样与工艺", detail: "上游工艺参数与基础成本已确认", state: "done" },
+            { label: "报价核对", detail: "当前核对费用、税率与目标毛利", state: "current" },
+            { label: "客户确认", detail: "发送后等待客户接受或提出调整", state: "next" },
+          ]}
+        />
+
         {/* 动态参数条 */}
         <div className="mb-4 border border-[var(--hairline)] rounded-md p-3 bg-[var(--card)] flex items-center gap-6 text-[14px] font-mono">
-          <span className="text-[var(--ink-mute)] uppercase tracking-[0.18em]">动态参数</span>
+          <span className="text-[var(--ink-mute)]">报价参数</span>
           <label className="flex items-center gap-2">
             <span className="text-[var(--ink-mute)]">管理费系数</span>
             <input type="number" step={0.05} min={1} max={3} value={mgmtFee}
@@ -169,12 +179,12 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
               className="w-20 bg-transparent border border-[var(--hairline)] rounded px-2 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]"
             />
           </label>
-          <span className="ml-auto text-[var(--ink-mute)]">改值即时重算 ↓</span>
+          <span className="ml-auto text-[var(--ink-mute)]">修改后即时重算</span>
         </div>
 
         <Tabs defaultValue="dyeing">
           <TabsList>
-            <TabsTrigger value="base" count={33}>基础信息</TabsTrigger>
+            <TabsTrigger value="base">商务信息</TabsTrigger>
             <TabsTrigger value="dyeing" count={dyeingRows.length}>染色工艺</TabsTrigger>
             <TabsTrigger value="sewing" count={sewingRows.length}>缝制工艺</TabsTrigger>
             <TabsTrigger value="accessory" count={accessoryRows.length}>辅料</TabsTrigger>
@@ -233,7 +243,7 @@ export default function QuoteDetail({ params }: { params: Promise<{ id: string }
 
 function FieldGrid({ fields }: { fields: Array<[string, ReactNode, boolean?]> }) {
   return (
-    <div className="grid grid-cols-2 gap-x-12">
+    <div className="grid gap-x-12 lg:grid-cols-2">
       {fields.map(([label, value, mono], i) => (
         <div key={i} className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
           <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[160px]">{label}</span>
@@ -248,14 +258,14 @@ function BaseInfoTab() {
   const f: Array<[string, ReactNode, boolean?]> = [
     ["报价单 ID", "Q-2026-0317-A", true],
     ["日期", "2026-07-18", true],
-    ["客户 (lookup)", "乾盛服饰有限公司"],
-    ["部门 (link)", "业务部"],
-    ["款号 (lookup)", "GH-QS-007-26FW-0317"],
-    ["品名 (lookup)", "羊毛双面呢"],
-    ["打样工艺单 ID (link)", "WO-2026-0317-A"],
+    ["客户", "乾盛服饰有限公司"],
+    ["部门", "业务部"],
+    ["款号", "GH-QS-007-26FW-0317"],
+    ["品名", "羊毛双面呢"],
+    ["来源工艺单", "WO-2026-0317-A"],
     ["订单数量", "200 件", true],
-    ["订单颜色 (select)", "炭灰"],
-    ["订单尺码范围 (link)", "S/M/L/XL"],
+    ["订单颜色", "炭灰"],
+    ["订单尺码范围", "S/M/L/XL"],
     ["管理费系数", "1.30", true],
     ["税率", "13%", true],
     ["目标毛利", "32%", true],
@@ -271,18 +281,11 @@ function BaseInfoTab() {
 
 /* ─── 关联基 Banner ─── */
 function BaseLinkBanner({ quoteId, table }: { quoteId: string; table: string }) {
+  const label = table.includes("染色") ? "染色工艺" : table.includes("缝制") ? "缝制工艺" : table.includes("辅料") ? "辅料费用" : table.includes("其他") ? "其他费用" : "商务信息";
   return (
-    <div className="border border-[var(--hairline)] rounded-md px-3 py-2 bg-[var(--card)] flex items-center justify-between text-[14px] font-mono">
-      <div className="flex items-center gap-2">
-        <span className="px-1.5 py-0.5 rounded border border-[var(--primary)] text-[var(--primary)]">link</span>
-        <span className="text-[var(--ink-mute)]">写入</span>
-        <span className="text-[var(--ink)]">{table}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--ink-mute)]">关联基 →</span>
-        <span className="text-[var(--ink)]">crm_报价单_基础信息表</span>
-        <code className="px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--ink)]">{quoteId}</code>
-      </div>
+    <div className="flex items-center justify-between rounded-md border border-[var(--hairline)] bg-[var(--card)] px-3 py-2 text-[13px]">
+      <span className="text-[var(--ink-dim)]">{label}</span>
+      <span className="font-mono text-[var(--ink-mute)]">关联报价 {quoteId}</span>
     </div>
   );
 }
@@ -321,9 +324,9 @@ function DyeingTab({
         </div>
         <div className="grid grid-cols-[120px_1fr_90px_90px_90px_110px_110px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
           <div>部件</div>
-          <div>工艺 · 来自 crm_字典_染色工艺信息表</div>
-          <div className="text-right">单价 ¥/kg</div>
-          <div className="text-right">重量 kg</div>
+          <div>工艺 · 从染色工艺中选择</div>
+          <div className="text-right">单价 ¥/公斤</div>
+          <div className="text-right">重量 公斤</div>
           <div className="text-right">损耗 %</div>
           <div className="text-right">不含损耗</div>
           <div className="text-right">含损耗</div>
@@ -333,10 +336,8 @@ function DyeingTab({
           <div key={r.id} className="grid grid-cols-[120px_1fr_90px_90px_90px_110px_110px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
             <input value={r.part} onChange={(e) => update(r.id, { part: e.target.value })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
-            <select value={r.process} onChange={(e) => update(r.id, { process: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {dyeings.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
+            <SelectControl value={r.process} onValueChange={(value) => update(r.id, { process: value })}
+              options={dyeings.map((value) => ({ value, label: value }))} />
             <input type="number" step={0.1} min={0} value={r.unitPrice}
               onChange={(e) => update(r.id, { unitPrice: Number(e.target.value) })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
@@ -393,7 +394,7 @@ function SewingTab({
           </p>
         </div>
         <div className="grid grid-cols-[1fr_90px_80px_100px_130px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-          <div>工序 · 来自 crm_字典_工序表</div>
+          <div>工序 · 从工序字典中选择</div>
           <div>单位</div>
           <div className="text-right">数量</div>
           <div className="text-right">工价 ¥</div>
@@ -402,14 +403,10 @@ function SewingTab({
         </div>
         {rows.map((r) => (
           <div key={r.id} className="grid grid-cols-[1fr_90px_80px_100px_130px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
-            <select value={r.process} onChange={(e) => update(r.id, { process: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {operations.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <select value={r.unit} onChange={(e) => update(r.id, { unit: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {["元/件", "元/米", "元/只", "元/套"].map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
+            <SelectControl value={r.process} onValueChange={(value) => update(r.id, { process: value })}
+              options={operations.map((value) => ({ value, label: value }))} />
+            <SelectControl value={r.unit} onValueChange={(value) => update(r.id, { unit: value })}
+              options={["元/件", "元/米", "元/只", "元/套"].map((value) => ({ value, label: value }))} />
             <input type="number" step={0.01} min={0} value={r.qty}
               onChange={(e) => update(r.id, { qty: Number(e.target.value) })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
@@ -458,12 +455,12 @@ function AccessoryTab({
         <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] flex items-center justify-between">
           <p className="font-display text-[18px] font-medium">辅料 · {rows.length} 类</p>
           <p className="font-mono text-[14px] text-[var(--ink-mute)]">
-            公式：数量 × 单价 · 辅料名来自 crm_字典_辅料配置表
+            数量或单价变化后自动更新小计
           </p>
         </div>
         <div className="grid grid-cols-[90px_1fr_80px_100px_120px_60px] gap-2 px-3 py-2 bg-[var(--secondary)]/30 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
           <div>类型</div>
-          <div>辅料名 · 来自 crm_字典_辅料配置表</div>
+          <div>辅料名 · 从辅料配置中选择</div>
           <div className="text-right">数量</div>
           <div className="text-right">单价 ¥</div>
           <div className="text-right">小计</div>
@@ -473,10 +470,8 @@ function AccessoryTab({
           <div key={r.id} className="grid grid-cols-[90px_1fr_80px_100px_120px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]">
             <input value={r.type} onChange={(e) => update(r.id, { type: e.target.value })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]" />
-            <select value={r.name} onChange={(e) => update(r.id, { name: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 focus:outline-none focus:border-[var(--primary)]">
-              {trims.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <SelectControl value={r.name} onValueChange={(value) => update(r.id, { name: value })}
+              options={trims.map((value) => ({ value, label: value }))} />
             <input type="number" step={0.01} min={0} value={r.qty}
               onChange={(e) => update(r.id, { qty: Number(e.target.value) })}
               className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-right tnum focus:outline-none focus:border-[var(--primary)]" />
@@ -582,23 +577,23 @@ function SummaryTab({
   targetMargin: number;
 }) {
   const rows = [
-    { label: "染色工艺成本小计", value: dyeing, formula: "Σ (F17 = 单价 × 下机克重) × (1+5% F16)", source: "lookup 染色成本小计" },
-    { label: "缝制工艺成本小计", value: sewing, formula: "Σ F18 = 工价 × (1+18% 管理费)", source: "lookup 缝制工艺成本小计" },
-    { label: "织造成本小计",     value: dyeing + sewing, formula: "F23 = 原料 + 机台 + 染色 + 缝制", source: "formula F23" },
-    { label: "辅料成本小计",     value: accessory, formula: "F19 = Σ 单价×用量 × 1.05", source: "lookup 辅料成本小计" },
-    { label: "其他费用小计",     value: other, formula: "F20 = Σ 单件金额", source: "lookup 其他费用" },
+    { label: "染色工艺成本小计", value: dyeing, formula: "单价 × 重量 ×（1 + 损耗）" },
+    { label: "缝制工艺成本小计", value: sewing, formula: "工价 ×（1 + 管理费）" },
+    { label: "织造成本小计",     value: dyeing + sewing, formula: "原料 + 机台 + 染色 + 缝制" },
+    { label: "辅料成本小计",     value: accessory, formula: "单价 × 用量 × 损耗系数" },
+    { label: "其他费用小计",     value: other, formula: "各项单件金额合计" },
   ];
 
   // crm_报价单_总计表 19 字段——逐字段渲染
   const TOTAL_FIELDS = [
-    { key: "filer-shrink", label: "备案不含税价",     value: `¥ ${filedPriceExc.toFixed(2)}`, source: "crm number" },
-    { key: "filer-inc",    label: "备案含税价",       value: `¥ ${filedPriceInc.toFixed(2)}`, source: "crm number" },
-    { key: "tax-amount",   label: "税费 (13%)",       value: `¥ ${taxAmount.toFixed(2)}`, source: "crm number" },
-    { key: "tax-rate",     label: "税率",             value: `${(taxRate * 100).toFixed(0)}%`, source: "crm number" },
-    { key: "weave-loss",   label: "织造损耗",         value: "5%", source: "crm number" },
-    { key: "dye-loss",     label: "染色损耗",         value: "5%", source: "crm number" },
-    { key: "machine-rate", label: "机台费标准",       value: "¥ 2.40 / 件", source: "crm number" },
-    { key: "mgmt-rate",    label: "管理费系数",       value: "1.18", source: "crm number" },
+    { key: "filer-shrink", label: "备案不含税价",     value: `¥ ${filedPriceExc.toFixed(2)}` },
+    { key: "filer-inc",    label: "备案含税价",       value: `¥ ${filedPriceInc.toFixed(2)}` },
+    { key: "tax-amount",   label: "税费 (13%)",       value: `¥ ${taxAmount.toFixed(2)}` },
+    { key: "tax-rate",     label: "税率",             value: `${(taxRate * 100).toFixed(0)}%` },
+    { key: "weave-loss",   label: "织造损耗",         value: "5%" },
+    { key: "dye-loss",     label: "染色损耗",         value: "5%" },
+    { key: "machine-rate", label: "机台费标准",       value: "¥ 2.40 / 件" },
+    { key: "mgmt-rate",    label: "管理费系数",       value: "1.18" },
   ];
 
   return (
@@ -606,7 +601,7 @@ function SummaryTab({
       {/* 公式链说明 */}
       <div className="border border-[var(--hairline)] rounded-md p-4 bg-[var(--secondary)]/40">
         <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] mb-3">
-          报价公式链 · 可审计
+          成本构成与报价过程
         </p>
         <div className="grid grid-cols-5 gap-3 text-[14px] font-mono">
           {[
@@ -711,9 +706,9 @@ function SummaryTab({
       {/* crm_报价单_总计表 19 字段 — 现场字段对齐卡 */}
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="px-4 py-3 bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
-          <p className="font-display text-[18px] font-medium">crm_报价单_总计表 · 8 关键字段</p>
+          <p className="font-display text-[18px] font-medium">报价关键结果</p>
           <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] mt-0.5">
-            数据源 · crm_报价单_总计表 (19 字段全表)
+            所有费用变化后自动更新
           </p>
         </div>
         <div className="grid grid-cols-4 gap-px bg-[var(--hairline)]">
@@ -721,7 +716,6 @@ function SummaryTab({
             <div key={f.key} className="bg-[var(--card)] px-4 py-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">{f.label}</span>
-                <span className="font-mono text-[14px] text-[var(--ink-mute)]">{f.source}</span>
               </div>
               <div className="font-display text-[18px] font-medium tnum text-[var(--ink)]">{f.value}</div>
             </div>
@@ -745,7 +739,7 @@ function SummaryTab({
             </span>
           </p>
           <p className="text-[14px] text-[var(--ink-mute)] mt-2">
-            本报价已同步写入审计日志。修改任一字段会触发新一次公式链重算。
+            本报价的关键修改会保留在审计日志中。调整费用后，成本和毛利会立即重新计算。
           </p>
         </div>
       </div>

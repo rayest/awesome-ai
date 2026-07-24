@@ -21,7 +21,7 @@ export default function NewSampleTypePage() {
     <AdminShell>
       <EntityForm
         title="新增样品种类"
-        subtitle="通知单和报价单的「产品类目」下拉选项就从这里来。crm_字典_样品种类表 · 写入 2 字段"
+        subtitle="新增可复用的样品种类，供打样通知、产品和报价统一选择。"
         backUrl="/dictionary/sample-types"
         backLabel="样品种类"
         fields={FIELDS}
@@ -34,7 +34,8 @@ export default function NewSampleTypePage() {
             description: `${values.name}`,
             duration: 4000,
           });
-          router.push(`/dictionary/sample-types/${newId}`);
+          console.info("【样品种类】种类已保存，返回列表", { 种类编号: newId, 名称: values.name });
+          router.push("/dictionary/sample-types");
         }}
       />
     </AdminShell>

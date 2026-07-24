@@ -96,7 +96,7 @@ export function NewCustomerSheet({
               await new Promise((r) => setTimeout(r, 400));
               onCreated?.(form);
               toast.success("客户已创建", {
-                description: `${form.shortName} · ${form.fullName} · 客户ID 由 crm 自动生成`,
+                description: `${form.shortName} · ${form.fullName}`,
                 duration: 4000,
               });
               setForm(DEFAULT_DATA);
@@ -107,8 +107,8 @@ export function NewCustomerSheet({
         >
           {/* 基础 */}
           <section>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
-              基础 · crm_客户表.客户名称 / 客户备注
+            <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
+              基础信息
             </p>
             <FieldGroup>
               <div>
@@ -119,7 +119,7 @@ export function NewCustomerSheet({
                   placeholder="如：乾盛"
                   autoFocus
                 />
-                <FieldHelp>前台显示的 2-4 字短名（写在 crm 客户名称字段）</FieldHelp>
+                <FieldHelp>列表和通知里使用的短名称</FieldHelp>
               </div>
               <div>
                 <FieldLabel required>客户全称</FieldLabel>
@@ -134,8 +134,8 @@ export function NewCustomerSheet({
 
           {/* 分类 */}
           <section>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
-              分类 · crm_客户表.客户类型 / 标签
+            <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
+              客户分类
             </p>
             <FieldGroup>
               <div>
@@ -157,10 +157,10 @@ export function NewCustomerSheet({
                     </button>
                   ))}
                 </FieldRow2>
-                <FieldHelp>crm 仅 3 个 select 选项：未合作 / 已合作 / 重要</FieldHelp>
+                <FieldHelp>用于筛选客户和安排跟进优先级</FieldHelp>
               </div>
               <div>
-                <FieldLabel>标签（crm select，可多选模拟）</FieldLabel>
+                <FieldLabel>标签</FieldLabel>
                 <FieldRow2>
                   {TAG_OPTIONS.map((t) => (
                     <button
@@ -184,8 +184,8 @@ export function NewCustomerSheet({
 
           {/* 归属 */}
           <section>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
-              归属 · crm_客户表.link 负责人 / 协作人
+            <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
+              负责人
             </p>
             <FieldGroup>
               <div>
@@ -193,7 +193,7 @@ export function NewCustomerSheet({
                 <Input
                   value={form.owner}
                   onChange={(e) => update("owner", e.target.value)}
-                  placeholder="crm_人员信息表 link"
+                  placeholder="如：李白"
                 />
               </div>
               <div>
@@ -209,8 +209,8 @@ export function NewCustomerSheet({
 
           {/* 备注 */}
           <section>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
-              备注 · crm_客户表.客户备注
+            <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] mb-3 border-b border-[var(--hairline)] pb-2">
+              备注
             </p>
             <div>
               <FieldLabel>客户备注</FieldLabel>

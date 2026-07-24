@@ -1,15 +1,11 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * FabricLabel — Auron 的唯一品牌签名元素。
+ * FabricLabel — 页面级业务摘要条。
  *
- * 灵感：服装上缝制的洗涤唛头（fabric care label）。
- * 用法：每张「工艺文档」（打样通知 / 工艺单 / 报价单 / 产品主数据）顶部。
- *
- * 设计语言：
- *  - 深靛底（ink 色）+ 织带纹理（1px 横向条纹 hairline）
- *  - 全部数字 / SKU 用 mono 字体（工业仪表感）
- *  - 白色文字 + 印泥红 accent（与 shadcn 主题一致）
+ * 原先是强品牌化的黑色唛头卡。实际 ERP 高频页面更需要快速进入列表、
+ * 表单和异常处理，因此这里收敛为轻量、可扫描的业务状态条。
  */
 
 export type FabricLabelItem = {
@@ -35,7 +31,7 @@ export type FabricLabelProps = {
   /** 交期 / 状态 */
   delivery?: FabricLabelItem[];
   /** 右侧 main ID 块（如二维码占位） */
-  rightSlot?: React.ReactNode;
+  rightSlot?: ReactNode;
   className?: string;
 };
 
@@ -50,124 +46,84 @@ export function FabricLabel({
   rightSlot,
   className,
 }: FabricLabelProps) {
+  const metrics = [...specs, ...prices, ...delivery].filter((item) => !isTechnicalMetric(item));
+  const summary = cleanBusinessSummary(composition);
+
   return (
-    <div
+    <section
       className={cn(
-        "relative overflow-hidden rounded-[var(--radius-card)]",
-        "bg-[var(--ink)] text-[var(--background)]",
-        "care-label-band",
-        "border border-[var(--hairline-strong)]",
+        "rounded-md border border-[var(--hairline)] bg-[var(--card)]",
+        "px-4 py-3 shadow-[0_1px_0_rgba(18,24,38,0.02)]",
         className
       )}
     >
-      {/* 织带纹理 */}
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 4px)",
-        }}
-      />
-
-      <div className="relative grid grid-cols-1 md:grid-cols-[1fr_160px] gap-4 px-6 py-5">
-        <div className="space-y-2.5">
-          {/* 主编号行 */}
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="font-mono text-[22px] leading-none tracking-tight">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-[14px] font-medium text-[var(--ink)] tracking-tight">
               {docNo}
             </span>
-            {shortCode && (
-              <span className="font-mono text-[14px] text-[var(--accent)] tracking-wider">
-                {shortCode}
-              </span>
-            )}
-            {season && (
-              <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] border border-white/10 px-1.5 py-0.5">
-                {season}
-              </span>
-            )}
+            {shortCode && <MetaPill>{shortCode}</MetaPill>}
+            {season && <MetaPill>{season}</MetaPill>}
           </div>
-
-          {/* 成分 */}
-          {composition && (
-            <div className="font-mono text-[14px] text-[var(--bone-dim,#c9c5b8)] tracking-wide">
-              {composition}
-            </div>
-          )}
-
-          {/* 物理规格 */}
-          {specs.length > 0 && (
-            <FieldRow items={specs} variant="default" />
-          )}
-
-          {/* 价格快照 */}
-          {prices.length > 0 && (
-            <div className="pt-2 border-t border-white/10">
-              <FieldRow items={prices} variant="price" />
-            </div>
-          )}
-
-          {/* 交期 */}
-          {delivery.length > 0 && (
-            <div className="pt-2 border-t border-white/10">
-              <FieldRow items={delivery} variant="default" />
-            </div>
+          {summary && (
+            <p className="mt-1 text-[14px] text-[var(--ink-dim)] truncate">
+              {summary}
+            </p>
           )}
         </div>
 
-        {/* 右侧 */}
-        <div className="flex md:flex-col items-end md:items-center justify-center md:justify-center gap-2 md:border-l md:border-white/10 md:pl-4">
-          {rightSlot ?? (
-            <div className="text-center">
-              <div className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)]">
-                QR
-              </div>
-              <div className="mt-1 grid grid-cols-6 gap-[2px] w-16 h-16 mx-auto">
-                {Array.from({ length: 36 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className="block w-full h-full"
-                    style={{
-                      background: i % 5 < 3 ? "white" : "transparent",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {rightSlot && <div className="shrink-0">{rightSlot}</div>}
       </div>
-    </div>
+
+      {metrics.length > 0 && (
+        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
+          {metrics.map((it, i) => (
+            <MetricItem key={`${it.label}-${i}`} item={it} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
-function FieldRow({
-  items,
-  variant,
-}: {
-  items: FabricLabelItem[];
-  variant: "default" | "price";
-}) {
+function MetaPill({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-      {items.map((it, i) => (
-        <div key={i} className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0">
-            {it.label}
-          </span>
-          <span
-            className={cn(
-              "text-[14px] leading-none",
-              it.mono && "font-mono tnum",
-              variant === "price" &&
-                "text-[15px] font-mono tnum text-white font-medium"
-            )}
-          >
-            {it.value}
-          </span>
-        </div>
-      ))}
+    <span className="rounded border border-[var(--hairline)] bg-[var(--secondary)] px-1.5 py-0.5 text-[12px] text-[var(--ink-mute)]">
+      {children}
+    </span>
+  );
+}
+
+function cleanBusinessSummary(value?: string) {
+  if (!value) return value;
+  return value
+    .split(/数据源|crm_|底表|字段对齐|表关系|关联关系/)
+    [0]
+    .trim()
+    .replace(/[·。；;,\s]+$/, "");
+}
+
+function isTechnicalMetric(item: FabricLabelItem) {
+  const text = `${item.label} ${item.value}`;
+  return /数据源|字段对齐|底表|表关系|关联关系|crm_|link|lookup|formula|auto_number|RBAC|权限矩阵/.test(text);
+}
+
+function MetricItem({ item }: { item: FabricLabelItem }) {
+  return (
+    <div className="min-w-0 rounded bg-[var(--secondary)]/45 px-3 py-2">
+      <p className="truncate text-[12px] text-[var(--ink-mute)]">
+        {item.label}
+      </p>
+      <p
+        className={cn(
+          "mt-0.5 truncate text-[15px] font-medium text-[var(--ink)]",
+          item.mono && "font-mono tnum"
+        )}
+        title={String(item.value)}
+      >
+        {item.value}
+      </p>
     </div>
   );
 }

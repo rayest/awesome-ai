@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,43 +35,18 @@ export default function DyeingsPage() {
   const cats = Array.from(new Set(all.map((d) => d.category)));
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="染色工艺"
+      pageKicker="字典维护"
+      pageDescription="维护染色方式、颜色工艺和相关说明，供工艺和报价复用。"
+      pageActions={(
+        <Link href="/dictionary/dyeings/new">
+          <Button variant="default" size="md">新增染色工艺</Button>
+        </Link>
+      )}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DICT-DYEINGS-2026-07-22"
-            shortCode="qs-app"
-            season="在档"
-            composition={`${all.length} 种染色工艺 · ${cats.length} 个分类`}
-            specs={[
-              { label: "总工艺", value: all.length, mono: true },
-              { label: "分类", value: cats.length, mono: true },
-              { label: "字段数", value: "5 / 5", mono: true },
-            ]}
-            prices={[
-              { label: "数据源", value: "crm_字典_染色工艺信息表", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DICT · dyeing
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">染色工艺</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              缸染低温 / 成衣染 / 整染 / 色牢度等级 ... 报价的「染整费用」都从这张表里挑。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/dictionary/dyeings/new">
-              <Button variant="default" size="md">+ 新增染色工艺</Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
           <Input
             placeholder="搜工艺 / 分类 / 计费方式..."
             value={q}

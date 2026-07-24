@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import {
   getOperations,
   getDyeings,
@@ -91,20 +92,22 @@ function DetailPageInner({ op }: { op: any }) {
           <div className="grid grid-cols-2 gap-x-12">
             <Row label="部件 ID" value={op.id as any} source="auto_number" mono />
             <Row label="位置" value={
-              <select value={String(v.location ?? op.location)} onChange={(e) => upd("location", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["前身", "后身", "袖子", "领", "口袋", "下摆", "侧缝", "其他"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.location ?? op.location)}
+                onValueChange={(value) => upd("location", value)}
+                options={["前身", "后身", "袖子", "领", "口袋", "下摆", "侧缝", "其他"].map((value) => ({ value, label: value }))}
+              />
             } source="text" />
             <Row label="名称" value={
               <input value={String(v.name ?? op.name)} onChange={(e) => upd("name", e.target.value)}
                 className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full" />
             } source="text" />
             <Row label="是否主片" value={
-              <select value={String(v.isPart ?? op.isPart)} onChange={(e) => upd("isPart", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["是", "否"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.isPart ?? op.isPart)}
+                onValueChange={(value) => upd("isPart", value)}
+                options={["是", "否"].map((value) => ({ value, label: value }))}
+              />
             } source="checkbox" />
             <Row label="备注" value={
               <input value={String(v.remark ?? op.remark)} onChange={(e) => upd("remark", e.target.value)}

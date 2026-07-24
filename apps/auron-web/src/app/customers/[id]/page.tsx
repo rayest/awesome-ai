@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getCustomerBundle } from "@/lib/data";
 import { withQuery } from "@/lib/url-filter";
-import { Phone, Mail, ArrowUpRight } from "lucide-react";
+import { Phone, Mail, ArrowUpRight, Pencil } from "lucide-react";
 
 /**
  * /customers/[id] · 客户详情
@@ -25,7 +25,7 @@ import { Phone, Mail, ArrowUpRight } from "lucide-react";
  *   工艺单也一并展示（按工艺表 join 通知表）
  *
  * 派生字段（聚合源表 join）：
- *   YTD 营收 / YTD 毛利 / 未结打样数 / 30d 跟进数 / 最后接触时间
+ *   年度营收 / 年度毛利 / 未结打样数 / 30 天 跟进数 / 最后接触时间
  */
 
 export default function CustomerDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +37,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
       <AdminShell>
         <div className="px-8 py-16 mx-auto max-w-[1280px] text-center">
           <h1 className="font-display text-[24px] font-medium mb-2">未找到客户 {id}</h1>
-          <p className="text-[14px] text-[var(--ink-dim)] mb-6">该 ID 不存在于 crm_客户表（mock 数据）。</p>
+          <p className="text-[14px] text-[var(--ink-dim)] mb-6">该客户可能已被删除，或当前账号没有查看权限。</p>
           <Link href="/customers"><Button variant="default" size="md">返回客户列表</Button></Link>
         </div>
       </AdminShell>
@@ -60,20 +60,20 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
         {/* 头部唛头 */}
         <div className="mb-6">
           <FabricLabel
-            docNo={`CUST-${customer.id}-DETAIL`}
+            docNo={customer.id}
             shortCode={customer.id.replace("CUST-", "")}
             season={customer.type}
             composition={`${customer.name} · ${customer.owner} 负责 · ${customer.collaborators?.length ?? 0} 协作`}
             specs={[
               { label: "客户 ID", value: customer.id, mono: true },
               { label: "类型", value: customer.type, mono: false },
-              { label: "YTD 营收", value: `¥${(customer.ytdRevenue / 10000).toFixed(1)}w`, mono: true },
-              { label: "YTD 毛利", value: `${customer.ytdMargin.toFixed(1)}%`, mono: true },
-              { label: "近 30d 跟进", value: customer.followups30d, mono: true },
-              { label: "最后接触", value: customer.lastContactAt, mono: true },
+              { label: "年度营收", value: customer.ytdRevenue ? `¥${(customer.ytdRevenue / 10000).toFixed(1)}w` : "—", mono: true },
+              { label: "年度毛利", value: customer.ytdMargin ? `${customer.ytdMargin.toFixed(1)}%` : "—", mono: true },
+              { label: "跟进记录", value: followups.length, mono: true },
+              { label: "最近联系", value: followups[0]?.lastContactAt ?? customer.lastContactAt ?? "暂无", mono: true },
             ]}
             prices={[
-              { label: "未结打样", value: customer.openNotices, mono: true },
+              { label: "打样通知", value: notices.length, mono: true },
               { label: "联系人", value: contacts.length, mono: true },
               { label: "在档工艺", value: workorders.length, mono: true },
               { label: "报价数", value: quotes.length, mono: true },
@@ -82,7 +82,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* 主区 */}
-        <div className="grid grid-cols-[1fr_320px] gap-6 mb-10">
+        <div className="mb-10 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-8">
             <CustomerBaseFields customer={customer} />
             <RelatedFollowups followups={followups} />
@@ -94,7 +94,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
           <div className="space-y-6">
             <CustomerActions customer={customer} />
             <ContactList contacts={contacts} />
-            <DataSourceCard />
+            <RelationshipStatusCard contacts={contacts} followups={followups} notices={notices} workorders={workorders} quotes={quotes} />
           </div>
         </div>
       </div>
@@ -104,19 +104,18 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
 
 /* ─── 子组件 ─── */
 
-function FieldRow({ label, value, mono, source }: { label: string; value: ReactNode; mono?: boolean; source?: string }) {
+function FieldRow({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean; source?: string }) {
   return (
     <div className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
       <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[140px]">{label}</span>
       <span className={cn("text-[14px] text-[var(--ink)] flex-1", mono && "font-mono tnum")}>{value}</span>
-      {source && <span className="font-mono text-[12px] text-[var(--ink-mute)]">{source}</span>}
     </div>
   );
 }
 
 function FieldGrid({ items }: { items: { label: string; value: ReactNode; mono?: boolean; source?: string }[] }) {
   return (
-    <div className="grid grid-cols-2 gap-x-12">
+    <div className="grid gap-x-12 lg:grid-cols-2">
       {items.map((it, i) => (
         <FieldRow key={i} label={it.label} value={it.value} mono={it.mono} source={it.source} />
       ))}
@@ -136,7 +135,7 @@ function SectionTitle({ title, count }: { title: string; count?: string }) {
 function CustomerBaseFields({ customer }: { customer: any }) {
   return (
     <section>
-      <SectionTitle title="客户档案 · crm_客户表" count="7 / 7 字段" />
+      <SectionTitle title="客户基本信息" />
       <div className="border border-[var(--hairline)] rounded-md p-5 bg-[var(--card)]">
         <FieldGrid
           items={[
@@ -144,7 +143,7 @@ function CustomerBaseFields({ customer }: { customer: any }) {
             { label: "客户名称",     value: customer.name, source: "text" },
             { label: "简称",         value: customer.shortName, source: "text" },
             { label: "客户类型",     value: <Badge tone={customer.type === "重要" ? "success" : customer.type === "已合作" ? "info" : "neutral"} size="sm">{customer.type}</Badge>, source: "select 3 选项" },
-            { label: "标签",         value: customer.tags.length === 0 ? <span className="font-mono text-[12px] text-[var(--ink-mute)]">—</span> : (
+            { label: "标签",         value: !customer.tags || customer.tags.length === 0 ? <span className="font-mono text-[12px] text-[var(--ink-mute)]">—</span> : (
                 <span className="inline-flex items-center gap-1">
                   {customer.tags.map((t: string) => (
                     <span key={t} className="font-mono text-[12px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--ink-dim)]">#{t}</span>
@@ -158,11 +157,11 @@ function CustomerBaseFields({ customer }: { customer: any }) {
                 </span>
               ) : <span className="font-mono text-[12px] text-[var(--ink-mute)]">—</span>, source: "link 人员 (多)" },
             { label: "客户备注",     value: customer.note || "—", source: "text" },
-            { label: "YTD 营收",     value: customer.ytdRevenue > 0 ? `¥${customer.ytdRevenue.toLocaleString()}` : "—", mono: true, source: "源 crm_报价单_总计表 ⓘ" },
-            { label: "YTD 毛利",     value: customer.ytdMargin > 0 ? `${customer.ytdMargin.toFixed(1)}%` : "—", mono: true, source: "源 crm_报价单_总计表 ⓘ" },
-            { label: "未结打样",     value: customer.openNotices, mono: true, source: "源 crm_打样通知_基础 ⓘ" },
-            { label: "近 30d 跟进",  value: customer.followups30d, mono: true, source: "源 crm_客户跟进记录 ⓘ" },
-            { label: "最后接触",     value: customer.lastContactAt, mono: true, source: "源 crm_客户跟进记录 MAX ⓘ" },
+            { label: "年度营收",     value: customer.ytdRevenue && customer.ytdRevenue > 0 ? `¥${customer.ytdRevenue.toLocaleString()}` : "—", mono: true, source: "源 crm_报价单_总计表 ⓘ" },
+            { label: "年度毛利",     value: customer.ytdMargin && customer.ytdMargin > 0 ? `${customer.ytdMargin.toFixed(1)}%` : "—", mono: true, source: "源 crm_报价单_总计表 ⓘ" },
+            { label: "未结打样",     value: customer.openNotices ?? "—", mono: true, source: "源 crm_打样通知_基础 ⓘ" },
+            { label: "近 30 天 跟进",  value: customer.followups30d ?? "—", mono: true, source: "源 crm_客户跟进记录 ⓘ" },
+            { label: "最后接触",     value: customer.lastContactAt ?? "—", mono: true, source: "源 crm_客户跟进记录 MAX ⓘ" },
           ]}
         />
       </div>
@@ -205,12 +204,15 @@ function CustomerActions({ customer }: { customer: any }) {
         <Link href={`/crm/contacts/new?customer=${customer.id}`} className="block">
           <div className="border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 添加联系人</p>
-            <p className="text-[12px] font-mono text-[var(--ink-mute)] mt-0.5">关联 crm_客户联系人表</p>
+            <p className="text-[12px] text-[var(--ink-mute)] mt-0.5">添加客户侧沟通窗口</p>
           </div>
         </Link>
         <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
-          <p className="text-[14px] font-medium text-[var(--ink)]">✏️ 编辑客户</p>
-          <p className="text-[12px] font-mono text-[var(--ink-mute)] mt-0.5">改 type / 备注 / 协作人</p>
+          <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
+            <Pencil className="h-3.5 w-3.5" />
+            编辑客户
+          </p>
+          <p className="text-[12px] text-[var(--ink-mute)] mt-0.5">修改客户类型、备注和协作人</p>
         </button>
       </div>
     </section>
@@ -250,19 +252,37 @@ function ContactList({ contacts }: { contacts: any[] }) {
   );
 }
 
-function DataSourceCard() {
+function RelationshipStatusCard({
+  contacts,
+  followups,
+  notices,
+  workorders,
+  quotes,
+}: {
+  contacts: any[];
+  followups: any[];
+  notices: any[];
+  workorders: any[];
+  quotes: any[];
+}) {
+  const steps = [
+    { label: "联系人", count: contacts.length, ready: contacts.length > 0 },
+    { label: "跟进记录", count: followups.length, ready: followups.length > 0 },
+    { label: "打样通知", count: notices.length, ready: notices.length > 0 },
+    { label: "工艺单", count: workorders.length, ready: workorders.length > 0 },
+    { label: "报价", count: quotes.length, ready: quotes.length > 0 },
+  ];
   return (
     <section>
-      <SectionTitle title="数据源 / crm 字段映射" />
-      <div className="border border-[var(--hairline)] rounded-md p-3 bg-[var(--secondary)]/40 space-y-1.5 font-mono text-[12px]">
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>主表</span><span className="text-[var(--ink-dim)]">crm_客户表 7/7</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>聚合方式</span><span className="text-[var(--ink-dim)]">getCustomerBundle()</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>联系人</span><span className="text-[var(--ink-dim)]">crm_客户联系人表</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>跟进</span><span className="text-[var(--ink-dim)]">crm_客户跟进记录表</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>打样通知</span><span className="text-[var(--ink-dim)]">crm_打样通知_基础</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>报价</span><span className="text-[var(--ink-dim)]">crm_报价单_基础</span></p>
-        <p className="text-[var(--ink-mute)] flex justify-between"><span>工艺单</span><span className="text-[var(--ink-dim)]">crm_打样工艺单_基础</span></p>
-        <p className="pt-2 border-t border-[var(--hairline)] text-[12px] text-[var(--ink-mute)]">派生 5 列 ⓘ 角标 · 源表聚合在后端接管</p>
+      <SectionTitle title="合作进展" />
+      <div className="overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--card)]">
+        {steps.map((step, index) => (
+          <div key={step.label} className="flex items-center gap-3 border-b border-[var(--hairline)] px-3 py-2.5 last:border-b-0">
+            <span className={cn("h-2 w-2 rounded-full", step.ready ? "bg-[var(--success)]" : "bg-[var(--hairline-strong)]")} />
+            <span className="text-[13px] text-[var(--ink-dim)]">{index + 1}. {step.label}</span>
+            <span className="ml-auto font-mono text-[12px] text-[var(--ink-mute)]">{step.count}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -281,7 +301,7 @@ function RelatedFollowups({ followups }: { followups: any[] }) {
               <Badge tone="info" size="sm">{f.status}</Badge>
               <span className="text-[14px] text-[var(--ink)]">{f.contactName}</span>
               <span className="text-[14px] text-[var(--ink-dim)] truncate">{f.record}</span>
-              <span className={cn("font-mono text-[14px]", f.nextContactAt.startsWith("今") ? "text-[var(--warn)]" : "text-[var(--ink-dim)]")}>{f.nextContactAt}</span>
+              <span className={cn("font-mono text-[14px]", f.nextContactAt?.startsWith("今") ? "text-[var(--warn)]" : "text-[var(--ink-dim)]")}>{f.nextContactAt}</span>
               <span className="font-mono text-[12px] text-[var(--ink-mute)] text-right inline-flex items-center justify-end gap-1">{f.owner}<ArrowUpRight className="w-3 h-3" /></span>
             </Link>
           ))}
@@ -301,8 +321,8 @@ function RelatedNotices({ notices }: { notices: any[] }) {
             <Link key={n.id} href={`/orders/sample-notices/${n.id}`} className="grid grid-cols-[160px_1fr_60px_60px_100px_60px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors">
               <span className="font-mono text-[14px] font-medium text-[var(--ink)]">{n.id}</span>
               <span className="text-[14px] text-[var(--ink-dim)] truncate">{n.product} · {n.color}</span>
-              <span className="font-mono tnum text-[14px] text-right">{n.specs.gsm}</span>
-              <span className="text-[12px] font-mono text-[var(--ink-mute)]">GSM</span>
+              <span className="font-mono tnum text-[14px] text-right">{n.specs?.gsm ?? "—"}</span>
+              <span className="text-[12px] font-mono text-[var(--ink-mute)]">克重</span>
               <Badge tone={n.progress === "已签收" ? "success" : n.progress === "前道中" ? "info" : n.progress === "后道中" ? "warn" : n.progress === "打回" ? "danger" : "neutral"} size="sm">{n.progress}</Badge>
               <span className="font-mono text-[12px] text-[var(--ink-mute)]">{n.updated}</span>
             </Link>
@@ -323,7 +343,7 @@ function RelatedQuotes({ quotes }: { quotes: any[] }) {
             <Link key={q.id} href={`/orders/quotations/${q.id}`} className="grid grid-cols-[140px_1fr_120px_100px_140px_60px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors">
               <span className="font-mono text-[14px] font-medium text-[var(--ink)]">{q.id}</span>
               <span className="text-[14px] text-[var(--ink-dim)] truncate">{q.product}</span>
-              <span className="font-mono tnum text-[14px] text-right">¥{q.filedPriceInc.toFixed(2)}</span>
+              <span className="font-mono tnum text-[14px] text-right">{q.filedPriceInc ? `¥${q.filedPriceInc.toFixed(2)}` : "—"}</span>
               <span className="font-mono text-[12px] text-[var(--ink-dim)]">{q.orderQty} 件</span>
               <Badge tone={q.status === "已成交" ? "success" : "warn"} size="sm">{q.status}</Badge>
               <span className="font-mono text-[12px] text-[var(--ink-mute)]">{q.updated}</span>

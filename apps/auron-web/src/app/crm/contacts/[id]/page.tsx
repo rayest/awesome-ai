@@ -59,7 +59,7 @@ export default function ContactDetail({ params }: { params: Promise<{ id: string
         <div className="mb-6">
           <FabricLabel
             docNo={`CONTACT-${contact.id}`}
-            shortCode={contact.customerId.replace("CUST-", "")}
+            shortCode={contact.customerId?.replace("CUST-", "") ?? contact.id}
             season={contact.role}
             composition={`${contact.name} · ${contact.title} · ${contact.dept} · 隶属 ${contact.customerName}`}
             specs={[
@@ -171,7 +171,7 @@ function ContactActions({ contact }: { contact: Contact }) {
     <section>
       <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">操作</p>
       <div className="space-y-2">
-        <a href={`tel:${contact.mobile.replace(/[^\d+]/g, "")}`} className="flex items-center gap-3 border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
+        <a href={contact.mobile ? `tel:${contact.mobile.replace(/[^\d+]/g, "")}` : "#"} className="flex items-center gap-3 border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
           <span className="w-8 h-8 rounded-full bg-[var(--success)] text-white flex items-center justify-center"><Phone className="w-4 h-4" /></span>
           <div>
             <p className="text-[14px] font-medium text-[var(--ink)]">拨号 · 移动</p>

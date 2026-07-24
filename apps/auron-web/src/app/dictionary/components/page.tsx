@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,44 +29,18 @@ export default function ComponentsPage() {
   const trimCount = all.length - partCount;
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="部件配置"
+      pageKicker="字典维护"
+      pageDescription="维护领子、袖口、下摆等部件配置，让工艺描述保持统一。"
+      pageActions={(
+        <Link href="/dictionary/components/new">
+          <Button variant="default" size="md">新增部件</Button>
+        </Link>
+      )}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DICT-COMPONENTS-2026-07-22"
-            shortCode="qs-app"
-            season="在档"
-            composition={`${all.length} 个部件 · ${partCount} 主片 · ${trimCount} 辅料位`}
-            specs={[
-              { label: "总部件", value: all.length, mono: true },
-              { label: "主片", value: partCount, mono: true },
-              { label: "辅料位", value: trimCount, mono: true },
-              { label: "字段数", value: "5 / 5", mono: true },
-            ]}
-            prices={[
-              { label: "数据源", value: "crm_字典_部件配置表", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DICT · component
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">部件配置</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              一件衣服由哪些裁片组成 — 前片/后片/袖/领/口袋，每个都在哪里、是不是主片。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/dictionary/components/new">
-              <Button variant="default" size="md">+ 新增部件</Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
           <Input
             placeholder="搜部件 / 位置 / 备注..."
             value={q}

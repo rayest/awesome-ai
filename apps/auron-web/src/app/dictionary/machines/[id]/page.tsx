@@ -8,8 +8,8 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight } from "lucide-react";
 import { getMachine } from "@/lib/data";
+import { Pencil } from "lucide-react";
 
 /**
  * /dictionary/machines/[id] · 机型配置详情
@@ -24,7 +24,7 @@ type Machine = {
   id: string;
   type: "高速机" | "普通机";
   modelSpec: string;       // 机型/口径（寸）
-  needles: number;
+  needle: number;
   rpm: number;
 };
 
@@ -80,11 +80,11 @@ export default function MachineDetail({ params }: { params: Promise<{ id: string
             docNo={`MACHINE-${machine.id}`}
             shortCode={machine.modelSpec}
             season={machine.type}
-            composition={`${machine.modelSpec} · ${machine.needles}G · ${machine.rpm} 转/min · 普通/高速=${machine.type}`}
+            composition={`${machine.modelSpec} · ${machine.needle}G · ${machine.rpm} 转/min · 普通/高速=${machine.type}`}
             specs={[
               { label: "机型 ID", value: machine.id, mono: true },
               { label: "类型", value: machine.type, mono: false },
-              { label: "针数", value: `${machine.needles}G`, mono: true },
+              { label: "针数", value: `${machine.needle}G`, mono: true },
               { label: "口径", value: machine.modelSpec.match(/\d+/)?.[0] ?? "—", mono: true },
               { label: "转速", value: `${machine.rpm} r/min`, mono: true },
               { label: "字段数", value: "6 / 6", mono: true },
@@ -134,7 +134,7 @@ function BaseFields({ machine }: { machine: Machine }) {
           <FieldRow label="机型 ID (auto)" value={machine.id} mono source="auto_number" />
           <FieldRow label="机型/口径（寸）" value={machine.modelSpec} source="text" />
           <FieldRow label="普通/高速机" value={machine.type} source="select 高速机/普通机" />
-          <FieldRow label="针数" value={`${machine.needles}G`} mono source="number" />
+          <FieldRow label="针数" value={`${machine.needle}G`} mono source="number" />
           <FieldRow label="转速（转/min）" value={`${machine.rpm}`} mono source="number" />
           <FieldRow label="双链引用" value="crm_打样工艺单_基础信息表" source="link 双向" />
         </div>
@@ -186,7 +186,10 @@ function Actions({ id }: { id: string }) {
           </div>
         </Link>
         <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
-          <p className="text-[14px] font-medium text-[var(--ink)]">✏️ 编辑机型</p>
+          <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
+            <Pencil className="h-3.5 w-3.5" />
+            编辑机型
+          </p>
           <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">改针数 / 转速 / 类型</p>
         </button>
       </div>

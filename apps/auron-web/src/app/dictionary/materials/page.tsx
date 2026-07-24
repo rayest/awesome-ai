@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -56,47 +55,18 @@ export default function MaterialsPage({
   }), [rows]);
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="物料 / 纱线"
+      pageKicker="字典维护"
+      pageDescription="维护纱线、物料规格和供应信息，报价和工艺用料统一从这里引用。"
+      pageActions={(
+        <Link href="/dictionary/materials/new">
+          <Button variant="default" size="md">新增物料</Button>
+        </Link>
+      )}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DICT-MATERIALS-2026-07-22"
-            shortCode="qs-app"
-            season="活跃"
-            composition={`${totals.items} 款纱线 · ${totals.specs} 种规格 · ${totals.suppliers} 家供应商`}
-            specs={[
-              { label: "物料", value: totals.items, mono: true },
-              { label: "规格", value: totals.specs, mono: true },
-              { label: "供应商", value: totals.suppliers, mono: true },
-            ]}
-            prices={[
-              { label: "平均单价", value: `¥${fmtPrice(totals.avgPrice)}/kg`, mono: true },
-              { label: "穿纱方式", value: "公式渲染中", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DICT · yarn
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">
-              物料 / 纱线
-            </h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              所有纺纱/面料供应商与批次。报价单从这里取物料单价。数据源：docs/data/crm/crm_字典_物料信息表.json（11 字段）。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="md">同步供应商</Button>
-            <Link href="/dictionary/materials/new">
-              <Button variant="default" size="md">+ 新增物料</Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
           <Input
             placeholder="搜纱线名 / 物料ID / 供应商..."
             value={q}
@@ -122,8 +92,8 @@ export default function MaterialsPage({
           </div>
         </div>
 
-        <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
-          <div className="grid grid-cols-[140px_1fr_60px_100px_50px_70px_90px_120px_80px_140px_60px] gap-2 px-3 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+        <div className="border border-[var(--hairline)] rounded-md overflow-x-auto bg-[var(--card)]">
+          <div className="grid min-w-[1120px] grid-cols-[130px_180px_70px_100px_50px_70px_90px_120px_90px_150px_70px] gap-2 px-3 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.12em] text-[var(--ink-mute)]">
             <div>物料 ID</div>
             <div>纱线名称</div>
             <div>类别</div>
@@ -132,7 +102,7 @@ export default function MaterialsPage({
             <div>颜色</div>
             <div>批号</div>
             <div>供应商</div>
-            <div className="text-right">单价 ¥/kg</div>
+            <div className="text-right">单价 ¥/公斤</div>
             <div>穿纱方式</div>
             <div className="text-center">被引用</div>
           </div>
@@ -143,7 +113,7 @@ export default function MaterialsPage({
               <Link
                 key={m.id}
                 href={`/dictionary/materials/${m.id}`}
-                className="grid grid-cols-[140px_1fr_60px_100px_50px_70px_90px_120px_80px_140px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
+                className="grid min-w-[1120px] grid-cols-[130px_180px_70px_100px_50px_70px_90px_120px_90px_150px_70px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
               >
                 <div className="font-mono text-[14px] text-[var(--ink-dim)] tracking-tight">{m.id}</div>
                 <div className="text-[14px] font-medium text-[var(--ink)] truncate">{m.yarnName}</div>

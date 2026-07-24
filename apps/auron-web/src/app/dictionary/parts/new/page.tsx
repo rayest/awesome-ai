@@ -21,7 +21,7 @@ export default function NewPartPage() {
     <AdminShell>
       <EntityForm
         title="新增测量部位"
-        subtitle="工艺单的尺寸要求表就是从这些部位里选。crm_字典_部位配置表 · 写入 2 字段"
+        subtitle="新增衣长、胸围、袖长等测量部位，供尺寸要求和验货标准统一选择。"
         backUrl="/dictionary/parts"
         backLabel="测量部位"
         fields={FIELDS}
@@ -34,7 +34,8 @@ export default function NewPartPage() {
             description: `${values.name}`,
             duration: 4000,
           });
-          router.push(`/dictionary/parts/${newId}`);
+          console.info("【测量部位】部位已保存，返回列表", { 部位编号: newId, 部位名称: values.name });
+          router.push("/dictionary/parts");
         }}
       />
     </AdminShell>

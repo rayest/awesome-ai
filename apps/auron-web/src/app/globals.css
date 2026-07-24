@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
- * Auron · 印泥红主题
+ * 海豚服装智造 · 印泥红主题
  * 浅色 · 冷白微染 · 单一暖色焦点
  * ============================================================ */
 
@@ -111,16 +111,6 @@
   .border-hairline { border-color: var(--hairline); }
   .border-hairline-strong { border-color: var(--hairline-strong); }
 
-  /* —— 印染厂唛头带：横向细条纹 —— */
-  .care-label-band {
-    background-image: repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent 2px,
-      rgba(255, 255, 255, 0.045) 2px,
-      rgba(255, 255, 255, 0.045) 3px
-    );
-  }
 }
 
 /* shadcn 衍生 */

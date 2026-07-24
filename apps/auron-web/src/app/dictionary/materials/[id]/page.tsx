@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Pencil } from "lucide-react";
 import { getMaterial } from "@/lib/data";
 
 /**
@@ -47,7 +47,7 @@ export default function MaterialDetail({ params }: { params: Promise<{ id: strin
   const save = async () => {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 400));
-    toast.success("已保存修改", { description: `${material?.yarnName ?? id} · ¥${material?.unitPrice}/kg`, duration: 3000 });
+    toast.success("已保存修改", { description: `${material?.yarnName ?? id} · ¥${material?.unitPrice}/公斤`, duration: 3000 });
     setSaving(false);
   };
 
@@ -95,7 +95,7 @@ export default function MaterialDetail({ params }: { params: Promise<{ id: strin
               { label: "穿纱", value: material.yarnMode },
             ]}
             prices={[
-              { label: "单价", value: `¥ ${material.unitPrice}/kg`, mono: true },
+              { label: "单价", value: `¥ ${material.unitPrice}/公斤`, mono: true },
               { label: "批号", value: material.batch, mono: true },
               { label: "被工艺引用", value: `${USED_BY_PROCESS.length} 件`, mono: true },
             ]}
@@ -198,7 +198,10 @@ function Actions({ mid }: { mid: string }) {
           </div>
         </Link>
         <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
-          <p className="text-[14px] font-medium text-[var(--ink)]">✏️ 编辑物料</p>
+          <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
+            <Pencil className="h-3.5 w-3.5" />
+            编辑物料
+          </p>
           <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">改单价 / 供应商 / 批号</p>
         </button>
       </div>

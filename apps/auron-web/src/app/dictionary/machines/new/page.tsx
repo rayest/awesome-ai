@@ -26,7 +26,7 @@ export default function NewMachinePage() {
     <AdminShell>
       <EntityForm
         title="新增机型配置"
-        subtitle="师傅录入。crm_字典_机型配置表 · 写入 4 字段"
+        subtitle="录入车间可用机型和关键参数，供工艺单选择后自动带入针数与参考转速。"
         backUrl="/dictionary/machines"
         backLabel="机型配置"
         fields={FIELDS}
@@ -39,7 +39,8 @@ export default function NewMachinePage() {
             description: `${values.modelSpec} · ${values.needles}G · ${values.rpm} r/min`,
             duration: 4000,
           });
-          router.push(`/dictionary/machines/${newId}`);
+          console.info("【机型字典】机型已保存，返回列表", { 机型编号: newId });
+          router.push("/dictionary/machines");
         }}
       />
     </AdminShell>

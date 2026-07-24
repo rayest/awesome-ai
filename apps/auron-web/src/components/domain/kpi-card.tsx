@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
 
 /**
  * KpiCard — Dashboard 关键指标卡
@@ -43,7 +44,7 @@ export function KpiCard({
       <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] flex items-center justify-between">
         <span>{label}</span>
         {alert && (
-          <span className="font-mono text-[14px] text-[var(--destructive)]">⚠</span>
+          <AlertTriangle className="h-3.5 w-3.5 text-[var(--destructive)]" />
         )}
       </p>
 

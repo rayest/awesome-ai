@@ -35,7 +35,7 @@ export default function NewOperationPage() {
     <AdminShell>
       <EntityForm
         title="新增工序"
-        subtitle="报价单的「染整 + 缝制 + 辅料 + 其他费用」就是从这张表挑出来的。crm_字典_工序表 · 写入 3 字段"
+        subtitle="维护可复用的生产工序与标准工价，工艺单和报价会从这里选择。"
         backUrl="/dictionary/operations"
         backLabel="工序字典"
         fields={FIELDS}
@@ -48,7 +48,8 @@ export default function NewOperationPage() {
             description: `${values.name} · ${values.price}`,
             duration: 4000,
           });
-          router.push(`/dictionary/operations/${newId}`);
+          console.info("【工序字典】工序已保存，返回列表", { 工序编号: newId, 工序名称: values.name });
+          router.push("/dictionary/operations");
         }}
       />
     </AdminShell>

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { KpiCard } from "@/components/domain/kpi-card";
 import { MiniSparkline } from "@/components/domain/sparkline";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getRoleLabel, type Role } from "@/lib/demo-state";
 import {
   AlertTriangle,
   Calendar,
@@ -22,7 +22,7 @@ import {
  *
  * 三大块（自上而下）：
  *  1. 唛头速览：今日关键流水
- *  2. KPI 8 卡：YTD 营收/毛利/平均客单/报价转化/在手工艺/待审/低库存/逾期
+ *  2. KPI 8 卡：年度营收/毛利/平均客单/报价转化/在手工艺/待审/低库存/逾期
  *  3. 双栏：
  *     - 今日待办（按角色）
  *     - 需关注的异常（margin / 库存 / 跟进 / 打样 4 类）
@@ -37,61 +37,31 @@ import {
 
 export default function DashboardPage() {
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="经营总览"
+      pageKicker="今日总览"
+      pageDescription="老板视角查看今日经营、待办和异常，优先处理会影响交期、报价和毛利的事项。"
+      pageActions={(
+        <>
+          <Button variant="outline" size="md">
+            <Calendar className="w-4 h-4" />
+            切换日期
+          </Button>
+          <Button variant="default" size="md">
+            <Receipt className="w-4 h-4" />
+            今日报价单
+          </Button>
+        </>
+      )}
+      pageMeta={[
+        { label: "在途订单", value: "18.6w" },
+        { label: "待处理", value: 5 },
+        { label: "异常", value: 3 },
+      ]}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1480px]">
-        {/* 顶部 唛头：今日速览 */}
-        <div className="mb-6">
-          <FabricLabel
-            docNo="DASHBOARD-2026-07-22"
-            shortCode="qs-app"
-            season="今天"
-            composition="¥18.6w 在途订单 · 5 待处理 · 3 异常需关注 · 平均毛利 32.4%"
-            specs={[
-              { label: "今日", value: "今 周三", mono: true },
-              { label: "在档客户", value: 6, mono: true },
-              { label: "在档工艺", value: 4, mono: true },
-              { label: "在档报价", value: 5, mono: true },
-            ]}
-            prices={[
-              { label: "YTD 营收", value: "¥ 6.5M", mono: true },
-              { label: "YTD 毛利", value: "¥ 1.7M", mono: true },
-              { label: "平均毛利", value: "32.4%", mono: true },
-            ]}
-            delivery={[
-              { label: "今打样", value: 3, mono: true },
-              { label: "今报价", value: 2, mono: true },
-              { label: "今成交", value: 1, mono: true },
-            ]}
-          />
-        </div>
-
-        {/* 页头 */}
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              DASHBOARD · today
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">
-              老板视角 · 全厂今日
-            </h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[480px]">
-              周三下午。今天发货多、注意良率。3 个异常在等你。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="md">
-              <Calendar className="w-4 h-4" />
-              切换日期
-            </Button>
-            <Button variant="default" size="md">
-              <Receipt className="w-4 h-4" />
-              今日报价单
-            </Button>
-          </div>
-        </div>
-
         {/* 一、核心 KPI (8 卡) ——
-             派生：YTD 营收/毛利/转化率 在手工艺/逾期跟进 → 都从对应 crm_* 表聚合
+             派生：年度营收/毛利/转化率 在手工艺/逾期跟进 → 都从对应 crm_* 表聚合
              在档纱线 → crm_字典_物料信息表 行数
         */}
         <section className="mb-10">
@@ -102,7 +72,7 @@ export default function DashboardPage() {
           </p>
           <div className="grid grid-cols-4 gap-3">
             <KpiCard
-              label="YTD 营收"
+              label="年度营收"
               value="¥ 6.5M"
               delta={{ value: 12.4, period: "同比", positive: true }}
               spark={[3.2, 3.5, 3.3, 3.8, 4.2, 5.1, 6.5]}
@@ -110,7 +80,7 @@ export default function DashboardPage() {
               href="/orders/quotations"
             />
             <KpiCard
-              label="YTD 毛利"
+              label="年度毛利"
               value="¥ 1.7M"
               delta={{ value: 2.1, period: "环比", positive: true }}
               spark={[2.0, 2.1, 2.0, 2.2, 1.6, 1.7, 1.7]}
@@ -219,7 +189,6 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <AlertCard
                 severity="danger"
-                icon="📉"
                 title="染色毛利 < 15% — 4 单受影响"
                 body="7/22 起天丝 LF 染料涨价 12%。涉及：Q-0315-A、T-0317-临时、Q-0314-D、T-0318-A。建议重新核算。"
                 href="/orders/quotations"
@@ -227,7 +196,6 @@ export default function DashboardPage() {
               />
               <AlertCard
                 severity="info"
-                icon="🧶"
                 title="物料字典状态 — crm 实际未支撑库存"
                 body="crm_字典_物料信息表不存储库存/安全库存字段。前端不再模拟低库存预警。请确认是否要新增库存字段、补 crm 表或换形式。"
                 href="/dictionary/materials"
@@ -235,7 +203,6 @@ export default function DashboardPage() {
               />
               <AlertCard
                 severity="warn"
-                icon="⏰"
                 title="跟进超期 7 天未触达 — 2 个客户"
                 body="巧岛（62 天前最后联系）、霞飞（62 天前最后联系）。3 个月无业务往来。"
                 href="/crm/followups"
@@ -304,7 +271,7 @@ function TodoGroup({
   color,
   items,
 }: {
-  role: string;
+  role: Role;
   color: string;
   items: { time: string; title: string; href: string; alert?: boolean }[];
 }) {
@@ -315,7 +282,7 @@ function TodoGroup({
           className="font-mono text-[14px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded"
           style={{ background: color + "20", color }}
         >
-          {role}
+          {getRoleLabel(role)}
         </span>
         <span className="font-mono text-[14px] text-[var(--ink-mute)]">
           {items.length} 项
@@ -347,14 +314,12 @@ function TodoGroup({
 
 function AlertCard({
   severity,
-  icon,
   title,
   body,
   href,
   cta,
 }: {
   severity: "info" | "warn" | "danger";
-  icon: string;
   title: string;
   body: string;
   href: string;
@@ -373,7 +338,18 @@ function AlertCard({
       )}
     >
       <div className="flex items-start gap-3">
-        <span className="text-[18px] shrink-0">{icon}</span>
+        <span
+          className={cn(
+            "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
+            severity === "danger"
+              ? "border-[var(--destructive)]/25 bg-[oklch(0.95_0.04_22)] text-[var(--destructive)]"
+              : severity === "warn"
+              ? "border-[var(--warn)]/30 bg-[var(--warn-soft)] text-[var(--warn)]"
+              : "border-[var(--info)]/30 bg-[var(--info-soft)] text-[var(--info)]"
+          )}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+        </span>
         <div className="flex-1 min-w-0">
           <p className={cn(
             "font-medium text-[14px] mb-1",
@@ -441,7 +417,7 @@ function PersonStat({
   name,
   today,
 }: {
-  role: string;
+  role: Role;
   name: string;
   today: string;
 }) {
@@ -449,7 +425,7 @@ function PersonStat({
     <div className="border border-[var(--hairline)] rounded-md p-3 bg-[var(--card)]">
       <div className="flex items-center justify-between mb-2">
         <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-          {role}
+          {getRoleLabel(role)}
         </span>
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
       </div>

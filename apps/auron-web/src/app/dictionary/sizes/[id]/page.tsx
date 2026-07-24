@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import {
   getOperations,
   getDyeings,
@@ -91,10 +92,11 @@ function DetailPageInner({ op }: { op: any }) {
           <div className="grid grid-cols-2 gap-x-12">
             <Row label="尺码 ID" value={op.id as any} source="auto_number" mono />
             <Row label="尺码" value={
-              <select value={String(v.size ?? op.size)} onChange={(e) => upd("size", e.target.value)}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] w-full">
-                {["XS", "S", "M", "L", "XL", "XXL", "XXXL", "均码"].map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <SelectControl
+                value={String(v.size ?? op.size)}
+                onValueChange={(value) => upd("size", value)}
+                options={["XS", "S", "M", "L", "XL", "XXL", "XXXL", "均码"].map((value) => ({ value, label: value }))}
+              />
             } source="select 7 选项" />
             <Row label="身高 cm" value={
               <input type="number" value={Number(v.heightCm ?? op.heightCm)} onChange={(e) => upd("heightCm", Number(e.target.value))}

@@ -26,7 +26,7 @@ export default function NewSizePage() {
     <AdminShell>
       <EntityForm
         title="新增尺码"
-        subtitle="通知单和报价单的尺码都从这里选。crm_字典_尺码配置表 · 写入 5 字段"
+        subtitle="维护统一尺码及参考标准，减少产品、打样通知和报价中的重复录入。"
         backUrl="/dictionary/sizes"
         backLabel="尺码配置"
         fields={FIELDS}
@@ -39,7 +39,8 @@ export default function NewSizePage() {
             description: `${values.size} · ${values.heightCm}cm · ${values.ageOrNumeric}`,
             duration: 4000,
           });
-          router.push(`/dictionary/sizes/${newId}`);
+          console.info("【尺码字典】尺码已保存，返回列表", { 尺码编号: newId, 尺码: values.size });
+          router.push("/dictionary/sizes");
         }}
       />
     </AdminShell>

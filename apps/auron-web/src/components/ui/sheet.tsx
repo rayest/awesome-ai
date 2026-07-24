@@ -71,7 +71,10 @@ export const SheetContent = React.forwardRef<
             </DialogPrimitive.Description>
           )}
         </div>
-        <DialogPrimitive.Close className="w-8 h-8 rounded-md hover:bg-[var(--accent)] flex items-center justify-center text-[var(--ink-dim)] shrink-0">
+        <DialogPrimitive.Close
+          aria-label="关闭抽屉"
+          className="w-8 h-8 rounded-md hover:bg-[var(--accent)] flex items-center justify-center text-[var(--ink-dim)] shrink-0"
+        >
           <X className="w-4 h-4" />
         </DialogPrimitive.Close>
       </div>
@@ -80,4 +83,3 @@ export const SheetContent = React.forwardRef<
   </SheetPortal>
 ));
 SheetContent.displayName = "SheetContent";
-

@@ -7,6 +7,7 @@ import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getProduct } from "@/lib/data";
+import { Pencil } from "lucide-react";
 
 /**
  * /products/[id] · 产品主数据详情
@@ -75,19 +76,18 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               { label: "款号", value: product.styleNo, mono: true },
               { label: "程序名", value: product.programName, mono: true },
               { label: "类目", value: product.category, mono: false },
-              { label: "平方克", value: `${product.gsm} GSM`, mono: true },
+              { label: "平方克", value: `${product.gsm} 克重`, mono: true },
               { label: "尺码", value: product.sizeRange, mono: false },
               { label: "色系", value: product.color.split("/").length + " 种", mono: true },
             ]}
             prices={[
               { label: "历史报价", value: "3 件", mono: true },
               { label: "最近成交", value: "¥ 395 / 件", mono: true },
-              { label: "字段数", value: "9 / 9", mono: true },
             ]}
           />
         </div>
 
-        <div className="grid grid-cols-[1fr_320px] gap-6">
+        <div className="grid grid-cols-[1fr_280px] gap-6">
           <div className="space-y-8">
             <BaseFields product={product} />
             <RelatedWorkorders rows={RELATED_PROCESS} />
@@ -95,7 +95,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
           </div>
           <div className="space-y-6">
             <Actions styleNo={product.styleNo} />
-            <DataSourceNote />
           </div>
         </div>
       </div>
@@ -103,12 +102,11 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   );
 }
 
-function FieldRow({ label, value, mono, source }: { label: string; value: string; mono?: boolean; source?: string }) {
+function FieldRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-baseline gap-3 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
-      <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] shrink-0 w-[120px]">{label}</span>
+      <span className="font-mono text-[13px] uppercase tracking-[0.08em] text-[var(--ink-mute)] shrink-0 w-[120px]">{label}</span>
       <span className={`text-[14px] text-[var(--ink)] flex-1 ${mono ? "font-mono tnum" : ""}`}>{value}</span>
-      {source && <span className="font-mono text-[14px] text-[var(--ink-mute)]">{source}</span>}
     </div>
   );
 }
@@ -117,26 +115,21 @@ function BaseFields({ product }: { product: Product }) {
   return (
     <section>
       <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">
-        产品档案 · crm_产品表
-        <span className="ml-2 font-mono text-[14px] text-[var(--ink-mute)]">9 / 9 字段</span>
+        产品档案
       </p>
       <div className="border border-[var(--hairline)] rounded-md p-4 bg-[var(--card)]">
         <div className="grid grid-cols-2 gap-x-12">
-          <FieldRow label="款号"     value={product.styleNo} mono source="text" />
-          <FieldRow label="程序名"   value={product.programName} mono source="text（机台识别）" />
-          <FieldRow label="类目"     value={product.category} source="text" />
-          <FieldRow label="品名"     value={product.name} source="text" />
-          <FieldRow label="纱线"     value={product.yarn} source="text" />
-          <FieldRow label="工艺描述" value={product.craft} source="text" />
-          <FieldRow label="尺码"     value={product.sizeRange} source="text" />
-          <FieldRow label="平方克"   value={`${product.gsm} GSM`} mono source="text" />
-          <FieldRow label="颜色"     value={product.color} source="text（多种以 / 分隔）" />
+          <FieldRow label="款号" value={product.styleNo} mono />
+          <FieldRow label="程序名" value={product.programName} mono />
+          <FieldRow label="类目" value={product.category} />
+          <FieldRow label="品名" value={product.name} />
+          <FieldRow label="纱线" value={product.yarn} />
+          <FieldRow label="工艺描述" value={product.craft} />
+          <FieldRow label="尺码" value={product.sizeRange} />
+          <FieldRow label="平方克" value={`${product.gsm} 克重`} mono />
+          <FieldRow label="颜色" value={product.color} />
         </div>
       </div>
-      <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-2 leading-relaxed">
-        ⚠ crm_产品表 无 status / orders_ytd / colors count / updated 字段 — 全部前端不发明。
-        "历史报价次数 / 最近成交价" 派生字段在右侧「历史报价」区显示。
-      </p>
     </section>
   );
 }
@@ -146,7 +139,7 @@ function RelatedWorkorders({ rows }: { rows: typeof RELATED_PROCESS }) {
     <section>
       <div className="flex items-center justify-between mb-3 border-b border-[var(--hairline)] pb-2">
         <p className="font-display text-[18px] font-medium text-[var(--ink)]">该产品的工艺引用</p>
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">关联 crm_打样工艺单_基础信息表</span>
+        <span className="text-[13px] text-[var(--ink-mute)]">用于快速查看当前款的工艺状态</span>
       </div>
       {rows.length === 0 ? (
         <div className="border border-dashed border-[var(--hairline-strong)] rounded-md py-6 text-center">
@@ -177,8 +170,8 @@ function QuoteHistory({ rows }: { rows: typeof HISTORY_QUOTES }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-3 border-b border-[var(--hairline)] pb-2">
-        <p className="font-display text-[18px] font-medium text-[var(--ink)]">历史报价 · crm_报价单_基础信息表</p>
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">COUNT(*) + MAX(最近成交价)</span>
+        <p className="font-display text-[18px] font-medium text-[var(--ink)]">历史报价</p>
+        <span className="text-[13px] text-[var(--ink-mute)]">最近 3 次</span>
       </div>
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
         {rows.map((q, i) => (
@@ -207,38 +200,22 @@ function Actions({ styleNo }: { styleNo: string }) {
         <Link href={`/orders/quotations/new?product=${styleNo}`} className="block">
           <div className="border border-[var(--primary)] rounded-md p-3 hover:bg-[var(--accent)]/30 transition-colors">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 发起报价</p>
-            <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">直接基于这款产品出价</p>
+            <p className="text-[13px] text-[var(--ink-mute)] mt-0.5">直接基于这款产品出价</p>
           </div>
         </Link>
         <Link href={`/orders/sample-workorders/new?product=${styleNo}`} className="block">
           <div className="border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 转工艺单</p>
-            <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">创建对应工艺配方</p>
+            <p className="text-[13px] text-[var(--ink-mute)] mt-0.5">创建对应工艺配方</p>
           </div>
         </Link>
         <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
-          <p className="text-[14px] font-medium text-[var(--ink)]">✏️ 编辑产品</p>
-          <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">改成分 / 工艺 / 颜色</p>
+          <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
+            <Pencil className="h-3.5 w-3.5" />
+            编辑产品
+          </p>
+          <p className="text-[13px] text-[var(--ink-mute)] mt-0.5">改成分 / 工艺 / 颜色</p>
         </button>
-      </div>
-    </section>
-  );
-}
-
-function DataSourceNote() {
-  return (
-    <section>
-      <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">数据源</p>
-      <div className="border border-[var(--hairline)] rounded-md p-3 bg-[var(--secondary)]/40 space-y-1 font-mono text-[14px]">
-        <p className="text-[var(--ink-mute)] flex justify-between">
-          <span>主表</span><span className="text-[var(--ink-dim)]">crm_产品表 9/9</span>
-        </p>
-        <p className="text-[var(--ink-mute)] flex justify-between">
-          <span>关联</span><span className="text-[var(--ink-dim)]">crm_报价单_基础 (lookup)</span>
-        </p>
-        <p className="text-[var(--ink-mute)] flex justify-between">
-          <span>无 link 关系</span><span className="text-[var(--ink-dim)]">产品表是孤岛</span>
-        </p>
       </div>
     </section>
   );

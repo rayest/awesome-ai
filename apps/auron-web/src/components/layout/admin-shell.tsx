@@ -1,8 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import type { ComponentType, ReactNode } from "react";
+import { useEffect, useState } from "react";
+import {
+  BellRing,
+  Cog,
+  Contact,
+  Droplets,
+  Inbox,
+  Layers,
+  Layers3,
+  LayoutDashboard,
+  ListChecks,
+  Menu,
+  Maximize2,
+  Package,
+  Puzzle,
+  Receipt,
+  Ruler,
+  Scissors,
+  ScrollText,
+  Tag,
+  User,
+  UserCog,
+  Users,
+  Wheat,
+  X,
+} from "lucide-react";
 import { LogoMark } from "@/components/layout/logo-mark";
+import { useDrawerPresentation } from "@/components/layout/route-presentation";
 import {
   useCurrentUser,
   setCurrentUser,
@@ -11,19 +39,19 @@ import {
   TENANTS,
   DEMO_USERS,
   useActivities,
+  getRoleLabel,
 } from "@/lib/demo-state";
 
 /**
  * AdminShell — ERP 主壳
  *
- * 3 区：
+ * 2 区：
  *  ┌──────────────────────────────────────────┐
- *  │ 顶栏（48px，tenant 切换 / ⌘K / 通知 / 用户） │
- *  ├────────┬──────────────────────────┬───────┤
- *  │ 左导航 │  主内容                  │ 操作 │
- *  │ 200px  │  自适应                 │ 岛    │
- *  │        │                          │ 80px │
- *  └────────┴──────────────────────────┴───────┘
+ *  │ 顶栏（48px，tenant 切换 / 通知 / 用户）      │
+ *  ├────────┬──────────────────────────┤
+ *  │ 左导航 │  主内容                  │
+ *  │ 200px  │  自适应                  │
+ *  └────────┴──────────────────────────┘
  *
  * 演示态增强：
  *   - TenantSwitcher 二级下拉（可在 乾盛/弘大/一针坊 间切）
@@ -34,7 +62,7 @@ import {
 
 const nav = [
   { group: "总览", items: [
-    { href: "/dashboard",   label: "Dashboard",     icon: "LayoutDashboard" },
+    { href: "/dashboard",   label: "经营总览",       icon: "LayoutDashboard" },
     { href: "/me",          label: "我的工作台",     icon: "User" },
   ]},
   { group: "客户", items: [
@@ -66,83 +94,220 @@ const nav = [
   ]},
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+type PageHeaderMeta = {
+  label: string;
+  value: ReactNode;
+};
+
+type AdminShellProps = {
+  children: ReactNode;
+  pageTitle?: string;
+  pageKicker?: string;
+  pageDescription?: string;
+  pageActions?: ReactNode;
+  pageMeta?: PageHeaderMeta[];
+};
+
+export function AdminShell({
+  children,
+  pageTitle,
+  pageDescription,
+  pageActions,
+  pageMeta,
+}: AdminShellProps) {
+  const inDrawer = useDrawerPresentation();
+  const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => setMobileNavOpen(false), [pathname]);
+  const activeNav = getActiveNav(pathname);
+  const showPageHeader = Boolean(pageTitle || pageDescription || pageActions || pageMeta?.length);
+
+  if (inDrawer) return <>{children}</>;
+
   return (
     <div className="min-h-screen grid grid-rows-[48px_1fr] bg-[var(--background)]">
       {/* —— 顶栏 —— */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 border-b border-[var(--hairline)] bg-[var(--card)]/90 backdrop-blur">
         <div className="flex items-center gap-6">
+          <button
+            type="button"
+            aria-label={mobileNavOpen ? "关闭导航" : "打开导航"}
+            aria-expanded={mobileNavOpen}
+            onClick={() => setMobileNavOpen((open) => !open)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--ink-dim)] hover:bg-[var(--accent)] lg:hidden"
+          >
+            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
           <Link href="/" className="flex items-center gap-2 group">
             <LogoMark />
-            <span className="font-display text-[18px] font-medium tracking-tight">Auron</span>
-            <span className="ml-1 font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] border border-[var(--hairline-strong)] px-1.5 py-0.5 rounded">
-              qiansheng
-            </span>
+            <span className="hidden font-display text-[18px] font-medium tracking-tight sm:inline">海豚服装智造</span>
           </Link>
-          <TenantSwitcher />
+          <div className="hidden md:block"><TenantSwitcher /></div>
         </div>
 
         <div className="flex items-center gap-1">
-          <button className="hidden md:flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--hairline-strong)] hover:border-[var(--primary)] transition-colors text-[14px] text-[var(--ink-mute)]">
-            <span>⌘K</span>
-            <span className="hidden lg:inline">搜客户 / 工单 / 操作</span>
-          </button>
           <NotificationBell />
           <Whoami />
         </div>
       </header>
 
       {/* —— 二级 —— */}
-      <div className="grid grid-cols-[200px_1fr_96px] min-h-0">
-        <aside className="border-r border-[var(--hairline)] bg-[var(--card)]/50 py-4 overflow-y-auto">
+      <div className="grid min-h-0 lg:grid-cols-[200px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-[var(--hairline)] bg-[var(--card)]/50 py-4 overflow-y-auto lg:block">
           {nav.map((section) => (
             <div key={section.group} className="mb-4">
-              <p className="px-4 pb-1 font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)]">
+              <p className="px-4 pb-1 font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)]">
                 {section.group}
               </p>
               <ul>
                 {section.items.map((it) => (
-                  <li key={it.href}>
-                    <Link
-                      href={it.href}
-                      className="flex items-center gap-2.5 px-4 h-8 text-[14px] text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-[var(--accent)] border-l-2 border-transparent hover:border-[var(--primary)] transition-colors"
-                    >
-                      <span className="w-4 h-4 rounded bg-[var(--hairline)] inline-block shrink-0" />
-                      {it.label}
-                    </Link>
-                  </li>
+                  <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
                 ))}
               </ul>
             </div>
           ))}
         </aside>
 
-        <main className="overflow-auto bg-[var(--background)]">
-          {children}
-        </main>
+        {mobileNavOpen && (
+          <div className="fixed inset-0 top-12 z-40 lg:hidden">
+            <button
+              type="button"
+              aria-label="关闭导航"
+              className="absolute inset-0 bg-black/20"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <aside className="relative h-full w-[260px] overflow-y-auto border-r border-[var(--hairline)] bg-[var(--card)] py-4 shadow-xl">
+              {nav.map((section) => (
+                <div key={section.group} className="mb-4">
+                  <p className="px-4 pb-1 font-mono text-[12px] text-[var(--ink-mute)]">{section.group}</p>
+                  <ul>
+                    {section.items.map((it) => (
+                      <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </aside>
+          </div>
+        )}
 
-        <aside className="border-l border-[var(--hairline)] bg-[var(--card)]/50 py-4 flex flex-col items-center gap-2">
-          <span className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] rotate-180 [writing-mode:vertical-rl] mb-4">
-            ACTIONS
-          </span>
-          <button className="w-12 h-12 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--accent-foreground)] transition-colors flex items-center justify-center text-[14px] font-medium leading-tight">
-            派单
-          </button>
-          <button className="w-12 h-12 rounded-md border border-[var(--hairline-strong)] text-[var(--ink-dim)] hover:bg-[var(--accent)] transition-colors flex items-center justify-center text-[14px] font-medium leading-tight">
-            复制
-            <br />
-            上版
-          </button>
-          <button className="w-12 h-12 rounded-md border border-[var(--hairline-strong)] text-[var(--ink-dim)] hover:bg-[var(--accent)] transition-colors flex items-center justify-center text-[14px] font-medium leading-tight">
-            导出
-            <br />
-            PDF
-          </button>
-        </aside>
+        <section className="grid min-h-0 grid-rows-[auto_1fr]">
+          {showPageHeader && (
+            <div className="border-b border-[var(--hairline)] bg-[var(--card)]/75 px-4 py-3.5 lg:px-8">
+              <nav className="mb-1.5 flex items-center text-[13px] text-[var(--ink-mute)]">
+                <span>{activeNav?.group ?? "工作台"}</span>
+              </nav>
+
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0">
+                  {pageTitle && (
+                    <h1 className="truncate text-[24px] font-medium leading-tight tracking-tight text-[var(--ink)]">
+                      {pageTitle}
+                    </h1>
+                  )}
+                  {pageDescription && (
+                    <p className="mt-1 max-w-[720px] text-[14px] leading-5 text-[var(--ink-dim)]">
+                      {pageDescription}
+                    </p>
+                  )}
+                </div>
+
+                {pageActions && (
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {pageActions}
+                  </div>
+                )}
+              </div>
+
+              {pageMeta?.length ? (
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {pageMeta.map((item) => (
+                    <span
+                      key={item.label}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--hairline)] bg-[var(--background)] px-2.5 text-[13px] text-[var(--ink-dim)]"
+                    >
+                      <span className="text-[var(--ink-mute)]">{item.label}</span>
+                      <span className="font-medium text-[var(--ink)]">{item.value}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <main className="overflow-auto bg-[var(--background)]">
+            {children}
+          </main>
+        </section>
       </div>
     </div>
   );
 }
+
+function getActiveNav(pathname: string) {
+  for (const section of nav) {
+    const item = section.items.find((it) => isActive(pathname, it.href));
+    if (item) return { group: section.group, label: item.label };
+  }
+  return null;
+}
+
+function isActive(pathname: string, href: string) {
+  if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavItem({
+  item,
+  active,
+}: {
+  item: { href: string; label: string; icon: string };
+  active: boolean;
+}) {
+  const Icon = NAV_ICONS[item.icon] ?? LayoutDashboard;
+
+  return (
+    <li>
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={
+          "flex items-center gap-2.5 px-4 h-8 border-l-2 text-[14px] transition-colors " +
+          (active
+            ? "border-[var(--primary)] bg-[var(--accent)]/70 text-[var(--ink)] font-medium"
+            : "border-transparent text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--primary)]")
+        }
+      >
+        <Icon className={active ? "h-4 w-4 text-[var(--primary)]" : "h-4 w-4 text-[var(--ink-mute)]"} />
+        <span className="truncate">{item.label}</span>
+      </Link>
+    </li>
+  );
+}
+
+const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  BellRing,
+  Cog,
+  Contact,
+  Droplets,
+  Inbox,
+  Layers,
+  Layers3,
+  LayoutDashboard,
+  ListChecks,
+  Maximize2,
+  Package,
+  Puzzle,
+  Receipt,
+  Ruler,
+  Scissors,
+  ScrollText,
+  Tag,
+  User,
+  UserCog,
+  Users,
+  Wheat,
+};
 
 /* ── Tenant 切换器（二级菜单） ── */
 function TenantSwitcher() {
@@ -158,7 +323,6 @@ function TenantSwitcher() {
       >
         <span className="w-2 h-2 rounded-full bg-[var(--success)]" />
         <span className="text-[14px] font-medium">{tenant.name}</span>
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">{tenant.shortCode}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className={open ? "rotate-180 transition-transform text-[var(--primary)]" : "text-[var(--ink-mute)] transition-transform"}>
           <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -227,8 +391,8 @@ function Whoami() {
         </span>
         <div className="flex flex-col items-start leading-tight">
           <span className="text-[14px] font-medium text-[var(--ink)]">{me.name}</span>
-          <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-            {me.role} · {me.dept}
+          <span className="text-[12px] text-[var(--ink-mute)]">
+            {getRoleLabel(me.role)} · {me.dept}
           </span>
         </div>
         <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className={open ? "rotate-180 transition-transform" : "transition-transform text-[var(--ink-mute)]"}>
@@ -237,7 +401,7 @@ function Whoami() {
       </button>
       {open && (
         <div className="absolute top-9 right-0 z-50 w-[240px] border border-[var(--hairline)] rounded-md bg-[var(--card)] shadow-lg overflow-hidden">
-          <p className="px-3 py-2 font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
+          <p className="px-3 py-2 font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
             演示态 · 切换用户
           </p>
           {DEMO_USERS.map((u) => (
@@ -254,8 +418,8 @@ function Whoami() {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] truncate">{u.name}</p>
-                <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-                  {u.role} · {u.dept}
+                <p className="text-[12px] text-[var(--ink-mute)]">
+                  {getRoleLabel(u.role)} · {u.dept}
                 </p>
               </div>
               {me.key === u.key && <span className="text-[var(--primary)] text-[14px]">✓</span>}
@@ -266,7 +430,7 @@ function Whoami() {
             onClick={() => setOpen(false)}
             className="block px-3 py-2 border-t border-[var(--hairline)] text-[14px] font-mono text-[var(--primary)] hover:bg-[var(--accent)] text-center"
           >
-            打开 /me 工作台 →
+            打开我的工作台 →
           </Link>
         </div>
       )}

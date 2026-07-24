@@ -15,6 +15,7 @@ import {
   relevantToMe,
   useActivities,
   DEMO_USERS,
+  getRoleLabel,
   type Role,
 } from "@/lib/demo-state";
 
@@ -56,13 +57,13 @@ function MeHeader({ me }: { me: ReturnType<typeof useCurrentUser> }) {
   return (
     <div className="mb-6 space-y-4">
       <FabricLabel
-        docNo={`ME-${me.name}-${new Date().toISOString().slice(0, 10)}`}
+        docNo={`我的工作台-${me.name}`}
         shortCode="我的"
-        season={me.role}
+        season={getRoleLabel(me.role)}
         composition={`${me.position} · ${me.dept} · 演示态可切换身份`}
         specs={[
           { label: "姓名", value: me.name, mono: false },
-          { label: "角色", value: me.role, mono: true },
+          { label: "角色", value: getRoleLabel(me.role), mono: false },
           { label: "部门", value: me.dept, mono: true },
           { label: "下次跟进", value: "今 16:00", mono: true },
         ]}
@@ -91,7 +92,7 @@ function MeHeader({ me }: { me: ReturnType<typeof useCurrentUser> }) {
               )}
               title={`${u.position} · ${u.dept}`}
             >
-              <span className="font-mono">{u.role}</span>
+              <span>{getRoleLabel(u.role)}</span>
               <span className="ml-1.5">{u.name}</span>
             </button>
           ))}
@@ -135,13 +136,13 @@ function SalesView() {
 
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 业务员视图`} sub={`销售 pipeline 的核心：客户 + 跟进 + 报价`} badge="SALES" />
+      <SectionTitle title={`${me.name} · 业务员视图`} sub={`客户、跟进、报价是业务员每天最常用的三件事`} badge="业务员" />
 
       {/* KPI */}
       <section>
         <div className="grid grid-cols-4 gap-3">
           <KpiCard label="我的客户"   value="3"   unit="家"  delta={{ value: 0, period: "本周" }}          spark={[3,3,3,3,3,3,3]} sparkTone="neutral" href="/customers" />
-          <KpiCard label="30d 跟进"   value="8"   unit="次"  delta={{ value: 2, period: "本周" }}          spark={[2,3,4,5,6,7,8]} sparkTone="success" href="/crm/followups" />
+          <KpiCard label="30 天 跟进"   value="8"   unit="次"  delta={{ value: 2, period: "本周" }}          spark={[2,3,4,5,6,7,8]} sparkTone="success" href="/crm/followups" />
           <KpiCard label="在手报价"   value="4"   unit="单"  delta={{ value: 0, period: "本周" }}          spark={[3,3,4,4,4,4,4]} sparkTone="neutral" href="/orders/quotations" />
           <KpiCard label="等待我跟进" value="3"   unit="条"  delta={{ value: 1, period: "今日新增", positive: false }} alert spark={[1,1,2,2,2,3,3]} sparkTone="warn" href="/crm/followups" />
         </div>
@@ -158,7 +159,7 @@ function SalesView() {
             subtitle: `#${c.id.replace("CUST-", "")} · ${c.tags[0] ?? "—"} · 上次 ${c.lastContact}`,
             right: [
               { label: "未结打样", value: c.openNotices, mono: true },
-              { label: "YTD", value: `¥${(c.ytdRevenue / 10000).toFixed(1)}w`, mono: true },
+              { label: "年度", value: `¥${(c.ytdRevenue / 10000).toFixed(1)}w`, mono: true },
             ],
           }))}
         />
@@ -178,7 +179,7 @@ function QuoterView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 报价员视图`} sub={`报价全权 · 含毛利/含税成本 · 优先审批`} badge="QUOTER" />
+      <SectionTitle title={`${me.name} · 报价员视图`} sub={`报价核算、毛利复核和审批处理`} badge="报价员" />
       <section>
         <div className="grid grid-cols-4 gap-3">
           <KpiCard label="我报价的"     value="5"   unit="单"  delta={{ value: 0, period: "本月" }}     spark={[3,4,4,5,5,5,5]} sparkTone="primary" href="/orders/quotations" />
@@ -204,7 +205,7 @@ function KnitMasterView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 前道师傅视图`} sub={`织造用料 · 纱线排列 · 工艺配方 · 含税成本 🔒`} badge="KNIT_MASTER" />
+      <SectionTitle title={`${me.name} · 前道师傅视图`} sub={`织造用料、纱线排列和工艺配方`} badge="前道师傅" />
       <section>
         <div className="grid grid-cols-4 gap-3">
           <KpiCard label="我巡检的批次" value="5" unit="个"  delta={{ value: 0, period: "今日" }}     spark={[5,4,6,5,5,5,5]} sparkTone="primary" href="/orders/sample-workorders" />
@@ -218,9 +219,9 @@ function KnitMasterView() {
         <SectionSub title="今日巡检" count="5 批次" />
         <CardList
           items={[
-            { href: "/orders/sample-workorders/WO-2026-0317-A", title: "WO-0317-A · 前道织造中", subtitle: "羊绒/长绒棉 60/40 · 320 GSM · 已织 80%", badge: <Badge tone="info" size="sm">进行中</Badge>, right: [{ label: "剩余", value: "5 天" }] },
-            { href: "/orders/sample-workorders/WO-2026-0316-A", title: "WO-0316-A · 罗纹打底", subtitle: "莫代尔 40/1 · 180 GSM · 染色待排", badge: <Badge tone="warn" size="sm">染色待排</Badge>, right: [{ label: "剩余", value: "2 天" }] },
-            { href: "/orders/sample-workorders/WO-2026-0325-A", title: "WO-0325-A · 高领打底试产首件", subtitle: "抗起球腈纶 32/2 · 260 GSM · 已完成首件", badge: <Badge tone="success" size="sm">已完成</Badge>, right: [{ label: "成型率", value: "94%" }] },
+            { href: "/orders/sample-workorders/WO-2026-0317-A", title: "WO-0317-A · 前道织造中", subtitle: "羊绒/长绒棉 60/40 · 320 克重 · 已织 80%", badge: <Badge tone="info" size="sm">进行中</Badge>, right: [{ label: "剩余", value: "5 天" }] },
+            { href: "/orders/sample-workorders/WO-2026-0316-A", title: "WO-0316-A · 罗纹打底", subtitle: "莫代尔 40/1 · 180 克重 · 染色待排", badge: <Badge tone="warn" size="sm">染色待排</Badge>, right: [{ label: "剩余", value: "2 天" }] },
+            { href: "/orders/sample-workorders/WO-2026-0325-A", title: "WO-0325-A · 高领打底试产首件", subtitle: "抗起球腈纶 32/2 · 260 克重 · 已完成首件", badge: <Badge tone="success" size="sm">已完成</Badge>, right: [{ label: "成型率", value: "94%" }] },
           ]}
         />
       </section>
@@ -233,7 +234,7 @@ function OrderView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 业务跟单视图`} sub={`打样通知进度跟踪 · 染厂 / 辅料 / 物流对接`} badge="ORDER" />
+      <SectionTitle title={`${me.name} · 业务跟单视图`} sub={`打样通知进度跟踪、辅料和交样对接`} badge="业务跟单" />
       <section>
         <div className="grid grid-cols-4 gap-3">
           <KpiCard label="我跟单的通知" value="5" unit="张" delta={{ value: 0, period: "本周" }} spark={[5,5,5,5,5,5,5]} sparkTone="primary" href="/orders/sample-notices" />
@@ -262,7 +263,7 @@ function SewMasterView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 后道师傅视图`} sub={`染色工艺 · 缝制工价 · 整烫包装 · 织造/染色成本 🔒`} badge="SEW_MASTER" />
+      <SectionTitle title={`${me.name} · 后道师傅视图`} sub={`染色、缝制、整烫和包装进度`} badge="后道师傅" />
       <section>
         <div className="grid grid-cols-4 gap-3">
           <KpiCard label="染色在产"     value="4" unit="批" delta={{ value: 0, period: "今日" }} spark={[3,4,4,4,4,4,4]} sparkTone="primary" href="/orders/sample-notices" />
@@ -280,7 +281,7 @@ function DirectorView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 厂长视图`} sub={`审批 · 异常 · 趋势 · 团队状态`} badge="DIRECTOR" />
+      <SectionTitle title={`${me.name} · 厂长视图`} sub={`审批、异常、趋势和团队状态`} badge="厂长" />
       <DirectorInner />
     </div>
   );
@@ -291,7 +292,7 @@ function OwnerView() {
   const me = useCurrentUser();
   return (
     <div className="space-y-8">
-      <SectionTitle title={`${me.name} · 老板视图`} sub={`全厂每日 · 待审 · 异常 · 趋势 · 团队 · 含成本和毛利`} badge="OWNER" />
+      <SectionTitle title={`${me.name} · 老板视图`} sub={`全厂今日、待审事项、异常、趋势和团队状态`} badge="老板" />
       <DirectorInner />
 
       {/* 老板专属：跨表活动聚合 */}
@@ -307,8 +308,8 @@ function DirectorInner() {
   return (
     <section>
       <div className="grid grid-cols-4 gap-3">
-        <KpiCard label="YTD 营收"     value="¥ 6.5M"  delta={{ value: 12.4, period: "同比", positive: true }} spark={[3.2,3.5,3.3,3.8,4.2,5.1,6.5]} sparkTone="primary" href="/orders/quotations" />
-        <KpiCard label="YTD 毛利"     value="¥ 1.7M"  delta={{ value: 2.1,  period: "环比", positive: true }} spark={[2.0,2.1,2.0,2.2,1.6,1.7,1.7]} sparkTone="success" href="/orders/quotations" />
+        <KpiCard label="年度营收"     value="¥ 6.5M"  delta={{ value: 12.4, period: "同比", positive: true }} spark={[3.2,3.5,3.3,3.8,4.2,5.1,6.5]} sparkTone="primary" href="/orders/quotations" />
+        <KpiCard label="年度毛利"     value="¥ 1.7M"  delta={{ value: 2.1,  period: "环比", positive: true }} spark={[2.0,2.1,2.0,2.2,1.6,1.7,1.7]} sparkTone="success" href="/orders/quotations" />
         <KpiCard label="平均含税毛利" value="32.4%"   delta={{ value: -1.2, period: "环比", positive: false }} spark={[34,33,34,31,30,31,32]} sparkTone="warn" alert href="/orders/quotations" />
         <KpiCard label="在手工艺"     value="4 单"    delta={{ value: 0, period: "环比" }} spark={[6,5,5,4,5,4,4]} sparkTone="neutral" href="/orders/sample-workorders" />
         <KpiCard label="未结打样"     value="2 单"    delta={{ value: 1, period: "今日", positive: false }} alert spark={[0,0,1,1,1,2,2]} sparkTone="danger" href="/orders/sample-notices" />
@@ -328,11 +329,11 @@ function SectionTitle({ title, sub, badge }: { title: string; sub: string; badge
   return (
     <div className="flex items-end justify-between border-b border-[var(--hairline)] pb-3">
       <div>
-        <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">/me · 我的工作台</p>
+        <p className="text-[14px] text-[var(--ink-mute)] mb-1.5">我的工作台</p>
         <h1 className="font-display text-[32px] font-medium tracking-tight text-[var(--ink)]">{title}</h1>
         <p className="mt-1 text-[14px] text-[var(--ink-dim)] max-w-[560px]">{sub}</p>
       </div>
-      <span className="font-mono text-[14px] uppercase tracking-[0.18em] px-2.5 py-1 rounded bg-[var(--accent)] text-[var(--ink)] border border-[var(--hairline-strong)]">
+      <span className="text-[14px] px-2.5 py-1 rounded bg-[var(--accent)] text-[var(--ink)] border border-[var(--hairline-strong)]">
         {badge}
       </span>
     </div>

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { FabricLabel } from "@/components/domain/fabric-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +12,9 @@ import { ArrowRight, Search, Filter, Lock } from "lucide-react";
 /**
  * 审计日志
  *
- * 这是 Base **完全缺** 的能力：
- *  - Base 没有 created_at / updated_at / updated_by
- *  - Base 没有「字段级」修改记录
+ * 这是 底表 **完全缺** 的能力：
+ *  - 底表 没有 created_at / updated_at / updated_by
+ *  - 底表 没有「字段级」修改记录
  *
  * 这里 demo：
  *  - 每条记录的创建、修改、删除
@@ -171,47 +170,27 @@ export default function AuditLogPage() {
   ).length;
 
   return (
-    <AdminShell>
+    <AdminShell
+      pageTitle="审计日志"
+      pageKicker="系统管理"
+      pageDescription="记录关键修改、敏感字段变更和异常操作，方便老板、厂长和管理员追溯。"
+      pageActions={(
+        <>
+          <Button variant="outline" size="md">
+            <Filter className="w-4 h-4" />
+            高级筛选
+          </Button>
+          <Button variant="outline" size="md">导出表格</Button>
+        </>
+      )}
+      pageMeta={[
+        { label: "全部", value: MOCK.length },
+        { label: "当前", value: rows.length },
+        { label: "敏感改动", value: sensitiveCount },
+      ]}
+    >
       <div className="px-8 py-8 mx-auto max-w-[1280px]">
-        {/* 顶部 唛头 */}
-        <div className="mb-6">
-          <FabricLabel
-            docNo="AUDIT-LOG-2026-07-21"
-            shortCode="qs-app"
-            season="本周"
-            composition={`${rows.length} 条审计 · ${sensitiveCount} 条含敏感字段改动 · 0 次未授权访问`}
-            specs={[
-              { label: "全部", value: MOCK.length, mono: true },
-              { label: "修改", value: MOCK.filter((e) => e.action === "update").length, mono: true },
-              { label: "删除", value: MOCK.filter((e) => e.action === "delete").length, mono: true },
-            ]}
-            prices={[
-              { label: "敏感改动", value: sensitiveCount, mono: true },
-              { label: "审计员", value: "李白", mono: true },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <p className="font-mono text-[14px] uppercase tracking-[0.2em] text-[var(--ink-mute)] mb-1.5">
-              SETTINGS · audit-log
-            </p>
-            <h1 className="font-display text-[32px] font-medium tracking-tight">审计日志</h1>
-            <p className="mt-1.5 text-[14px] text-[var(--ink-dim)] max-w-[520px]">
-              谁、什么时间、哪个字段、改成什么、为何改。**Base 没有这个能力。**
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="md">
-              <Filter className="w-4 h-4" />
-              高级筛选
-            </Button>
-            <Button variant="outline" size="md">导出 CSV</Button>
-          </div>
-        </div>
-
-        {/* 搜索 + 过滤 */}
+                {/* 搜索 + 过滤 */}
         <div className="flex items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-[420px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-mute)]" />

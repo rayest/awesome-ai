@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -12,9 +12,12 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [reportedAt, setReportedAt] = useState("");
+
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error("[App Error]", error);
+    setReportedAt(new Date().toISOString().slice(0, 19).replace("T", " "));
   }, [error]);
 
   return (
@@ -46,7 +49,7 @@ export default function ErrorPage({
         <div className="mt-12 border-t border-[var(--hairline)] pt-6 grid grid-cols-3 gap-4 text-left text-[14px] font-mono">
           <div>
             <p className="text-[var(--ink-mute)] uppercase tracking-[0.18em]">报错时间</p>
-            <p className="text-[var(--ink)] mt-0.5">{new Date().toISOString().slice(0, 19).replace("T", " ")}</p>
+            <p className="text-[var(--ink)] mt-0.5">{reportedAt || "正在记录…"}</p>
           </div>
           <div>
             <p className="text-[var(--ink-mute)] uppercase tracking-[0.18em]">错误码</p>

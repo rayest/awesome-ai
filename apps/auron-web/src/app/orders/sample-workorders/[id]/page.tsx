@@ -5,7 +5,9 @@ import { use } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
+import { ProcessRail } from "@/components/domain/workflow-list";
 import { Button } from "@/components/ui/button";
+import { SelectControl } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -28,12 +30,12 @@ import {
  *  - 尺寸要求 (7 fields, crm_打样工艺单_尺寸要求表)
  *
  * 公式严格对齐 crm 字段 F6/F9/F10：
- *  - 原料成本 = 下机克重(g) × 面料单价(元/kg) × (1 + 损耗系数) × 配比 ÷ 1000
+ *  - 原料成本 = 下机克重(g) × 面料单价(元/公斤) × (1 + 损耗系数) × 配比 ÷ 1000
  *  - 机台费 = 机台费标准 ÷ 79200 × 下机时间(秒) × 配比 × (1 + 损耗系数)
  *  - 织造成本 = 原料成本 + 机台费（机台费只算一次）
  *
  * 单位约定（base description）：
- *  - 下机克重 g；面料单价 元/kg；原料成本 元
+ *  - 下机克重 g；面料单价 元/公斤；原料成本 元
  *  - 配比 0-100（百分数 / 100 入乘式）
  */
 
@@ -57,14 +59,14 @@ export default function WorkOrderDetail({ params }: { params: Promise<{ id: stri
             docNo="WO-2026-0317-A"
             shortCode="GH-QS-007"
             season="Q3-26"
-            composition="60% 澳毛 80s · 40% 长绒棉 60s · 18G 圆机双面 · 320 GSM"
+            composition="60% 澳毛 80s · 40% 长绒棉 60s · 18G 圆机双面 · 320 克重"
             specs={[
               { label: "机型", value: "广源 GY-18 寸", mono: true },
               { label: "针数", value: "18G", mono: true },
               { label: "口径", value: "18 寸", mono: true },
               { label: "转速", value: "18 转", mono: true },
               { label: "下机秒", value: "240", mono: true },
-              { label: "下机克重", value: "320 GSM", mono: true },
+              { label: "下机克重", value: "320 克重", mono: true },
             ]}
             prices={[
               { label: "原料成本", value: "¥ 187.20", mono: true },
@@ -92,15 +94,23 @@ export default function WorkOrderDetail({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-2">
             <Button variant="outline" size="md">复制为新版</Button>
             <Button variant="outline" size="md">导出 PNG</Button>
-            <Button variant="default" size="md">推送至车间</Button>
+            <Button variant="default" size="md">审核通过并下发车间</Button>
           </div>
         </div>
+
+        <ProcessRail
+          steps={[
+            { label: "打样通知", detail: "上游样衣目标与交期已确认", state: "done" },
+            { label: "工艺审核与执行", detail: "当前核对用料、机台和尺寸", state: "current" },
+            { label: "生成报价", detail: "工艺确认后进入成本与报价", state: "next" },
+          ]}
+        />
 
         {/* ─── Tabs ─── */}
         <Tabs defaultValue="base">
           <TabsList>
-            <TabsTrigger value="base" count={21}>
-              基础信息
+            <TabsTrigger value="base">
+              工艺概况
             </TabsTrigger>
             <TabsTrigger value="yarn" count={4}>
               织造用料
@@ -140,7 +150,7 @@ export default function WorkOrderDetail({ params }: { params: Promise<{ id: stri
           <TabsContent value="audit">
             <div className="border border-dashed border-[var(--hairline-strong)] rounded-md py-10 text-center">
               <p className="text-[14px] font-mono text-[var(--ink-mute)]">
-                工艺单还没有改动 · 字段修改人 + 修改时间 + 修改前后值将在此展示
+                暂无变更记录。修改工艺参数后，将在这里显示操作人、时间和修改内容。
               </p>
             </div>
           </TabsContent>
@@ -167,7 +177,7 @@ function FieldRow({ label, value, mono }: { label: string; value: ReactNode; mon
 
 function FieldGrid({ fields }: { fields: Array<[string, ReactNode, boolean?]> }) {
   return (
-    <div className="grid grid-cols-2 gap-x-12">
+    <div className="grid gap-x-12 lg:grid-cols-2">
       {fields.map(([label, value, mono], i) => (
         <FieldRow key={i} label={label} value={value} mono={mono ?? true} />
       ))}
@@ -183,7 +193,7 @@ function BaseInfoTab() {
     ["机型", "广源 GY-18 寸 · 18G"],
     ["成分", "60% 澳毛 + 40% 长绒棉"],
     ["配比", "60 / 40"],
-    ["平方克重 GSM", 320],
+    ["平方克重 克重", 320],
     ["下机克重", 310],
     ["下机叠放要求", "双向叠 · 不起折"],
     ["下机时间", "240 秒"],
@@ -207,13 +217,13 @@ function BaseInfoTab() {
  *
  * 严格按 crm F6 / F9 / F10 重写：
  *   原料成本（每件 / 元）
- *     = 下机克重(g) × 面料单价(元/kg) × (1 + 损耗系数) × 配比 ÷ 1000
+ *     = 下机克重(g) × 面料单价(元/公斤) × (1 + 损耗系数) × 配比 ÷ 1000
  *   机台费（每件 / 元）
  *     = 机台费标准 ÷ 79200 × 该部件下机时间(秒) × 配比 × (1 + 损耗系数)
  *   织造成本 = 原料成本 + 机台费（机台费只算一次 — base 注明）
  *
  * 单位（base description）：
- *   下机克重 g / 面料单价 元/kg / 原料成本 元 / 配比 0-100 / 损耗系数 0-1
+ *   下机克重 g / 面料单价 元/公斤 / 原料成本 元 / 配比 0-100 / 损耗系数 0-1
  */
 type YarnMixRow = {
   id: string;
@@ -226,18 +236,11 @@ type YarnMixRow = {
 
 /** 关联基 Banner —— 显示「当前 tab 写入哪张表，外键是哪张表」 */
 function BaseLinkBanner({ workorderId, table }: { workorderId: string; table: string }) {
+  const label = table.includes("织造用料") ? "织造用料" : table.includes("纱线排列") ? "纱线排列" : "尺寸要求";
   return (
-    <div className="border border-[var(--hairline)] rounded-md px-3 py-2 bg-[var(--card)] flex items-center justify-between text-[14px] font-mono">
-      <div className="flex items-center gap-2">
-        <span className="px-1.5 py-0.5 rounded border border-[var(--primary)] text-[var(--primary)]">link</span>
-        <span className="text-[var(--ink-mute)]">写入</span>
-        <span className="text-[var(--ink)]">{table}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--ink-mute)]">关联基 →</span>
-        <span className="text-[var(--ink)]">crm_打样工艺单_基础信息表</span>
-        <code className="px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--ink)]">{workorderId}</code>
-      </div>
+    <div className="flex items-center justify-between rounded-md border border-[var(--hairline)] bg-[var(--card)] px-3 py-2 text-[13px]">
+      <span className="text-[var(--ink-dim)]">{label}</span>
+      <span className="font-mono text-[var(--ink-mute)]">关联工艺单 {workorderId}</span>
     </div>
   );
 }
@@ -291,7 +294,7 @@ function YarnMixTab({ workorderId }: { workorderId: string }) {
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="grid grid-cols-[90px_1fr_120px_120px_120px_90px_60px] gap-2 px-3 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
           <div>部件</div>
-          <div>物料 · 来自 crm_字典_物料信息表</div>
+          <div>物料 · 从物料字典中选择</div>
           <div className="text-right">配比 %</div>
           <div className="text-right">损耗系数</div>
           <div className="text-right">下机时间 s</div>
@@ -304,27 +307,23 @@ function YarnMixTab({ workorderId }: { workorderId: string }) {
             key={r.id}
             className="grid grid-cols-[90px_1fr_120px_120px_120px_90px_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]"
           >
-            <select
+            <SelectControl
               value={r.part}
-              onChange={(e) => update(r.id, { part: e.target.value })}
-              className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
-            >
-              {PART_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
+              onValueChange={(value) => update(r.id, { part: value })}
+              options={PART_OPTIONS.map((value) => ({ value, label: value }))}
+            />
 
             <div className="flex items-center gap-2 min-w-0">
-              <select
-                value={r.materialId}
-                onChange={(e) => update(r.id, { materialId: e.target.value })}
+              <SelectControl
+                value={r.materialId || undefined}
+                onValueChange={(value) => update(r.id, { materialId: value })}
+                placeholder="— 选择物料 —"
                 className="flex-1 min-w-0 bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
-              >
-                <option value="">— 选择物料 —</option>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.yarnName} · {m.spec} · ¥{m.unitPrice}/kg · {m.supplier}
-                  </option>
-                ))}
-              </select>
+                options={materials.map((m) => ({
+                  value: m.id,
+                  label: `${m.yarnName} · ${m.spec} · ¥${m.unitPrice}/公斤 · ${m.supplier}`,
+                }))}
+              />
               {r.m && (
                 <span className="text-[14px] text-[var(--ink-mute)] truncate shrink-0" title={r.m.batch}>
                   {r.m.batch}
@@ -392,37 +391,35 @@ function YarnMixTab({ workorderId }: { workorderId: string }) {
 
       <div className="border border-[var(--hairline)] rounded-md p-4 bg-[var(--secondary)]/40 text-[14px] font-mono">
         <p className="uppercase tracking-[0.18em] text-[var(--ink-mute)] mb-2">
-          公式引擎 · 来自 crm F6 / F9 / F10
+          成本测算说明
         </p>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <div className="text-[var(--ink-mute)]">原料成本 (F6)</div>
+            <div className="text-[var(--ink-mute)]">原料成本</div>
             <div className="text-[var(--ink)] mt-0.5 leading-relaxed">
               下机克重 × 单价 × (1 + 损耗) × 配比 ÷ 1000
             </div>
           </div>
           <div>
-            <div className="text-[var(--ink-mute)]">机台费 (F9)</div>
+            <div className="text-[var(--ink-mute)]">机台费</div>
             <div className="text-[var(--ink)] mt-0.5 leading-relaxed">
               机台费标准 ÷ 79200 × 下机秒 × 配比 × (1 + 损耗)
             </div>
           </div>
           <div>
-            <div className="text-[var(--ink-mute)]">织造成本 (F10)</div>
+            <div className="text-[var(--ink-mute)]">织造成本</div>
             <div className="text-[var(--ink)] mt-0.5 leading-relaxed">
               原料成本 + 机台费 (机台费只算一次)
             </div>
           </div>
         </div>
         <p className="mt-3 text-[var(--ink-mute)]">
-          下机克重 = {下机克重} g（来自 crm_打样工艺单_基础信息表.下机克重）；
-          机台费标准 = {机台费标准} 元/件（演示值）
+          当前下机克重 {下机克重}g；机台费标准 {机台费标准} 元/件。修改配比、损耗或下机时间后自动重算。
         </p>
       </div>
 
       <div className="border border-dashed border-[var(--hairline-strong)] rounded-md p-3 text-[14px] font-mono text-[var(--ink-mute)]">
-        💾 点「保存」将 {rows.length} 行写入 crm_打样工艺单_织造用料表，
-        每条记录的 <span className="text-[var(--ink)]">workorderId</span> 自动 link 到 crm_打样工艺单_基础信息表.{workorderId}。
+        保存后更新本工艺单的 {rows.length} 条织造用料，并重新计算原料与机台成本。
       </div>
     </div>
   );
@@ -501,7 +498,7 @@ function YarnLanesTab({ workorderId }: { workorderId: string }) {
       <BaseLinkBanner workorderId={workorderId} table="crm_打样工艺单_纱线排列表" />
 
       <div className="flex items-center justify-between text-[14px] font-mono text-[var(--ink-mute)]">
-        <span>物料 ↓ 来自 crm_字典_物料信息表（点单元格选择）；共 {programList.length} 个程序</span>
+        <span>点击单元格选择物料；当前共 {programList.length} 个程序</span>
         <button onClick={addProgram} className="text-[var(--primary)] hover:underline">
           + 添加程序
         </button>
@@ -550,26 +547,22 @@ function YarnLanesTab({ workorderId }: { workorderId: string }) {
                         key={feeder}
                         className="px-1 py-1 min-h-[48px] border-l border-[var(--hairline)] flex items-center justify-center bg-[var(--background)]/40"
                       >
-                        <select
-                          value={cell?.materialId ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v === "") updateCell(prog.name, lane, feeder, null);
+                        <SelectControl
+                          value={cell?.materialId || "__empty__"}
+                          onValueChange={(value) => {
+                            if (value === "__empty__") updateCell(prog.name, lane, feeder, null);
                             else updateCell(prog.name, lane, feeder, {
-                              materialId: v,
+                              materialId: value,
                               mode: cell?.mode ?? "满穿",
                               tension: cell?.tension ?? 2.5,
                             });
                           }}
-                          className="w-full bg-transparent border border-transparent hover:border-[var(--hairline)] rounded px-1 py-0.5 text-center text-[14px] font-mono focus:outline-none focus:border-[var(--primary)]"
-                        >
-                          <option value="">— 空 —</option>
-                          {materials.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.yarnName}
-                            </option>
-                          ))}
-                        </select>
+                          className="h-8 w-full border-transparent bg-transparent px-2 text-center font-mono hover:border-[var(--hairline)]"
+                          options={[
+                            { value: "__empty__", label: "— 空 —" },
+                            ...materials.map((m) => ({ value: m.id, label: m.yarnName })),
+                          ]}
+                        />
                         {mat && (
                           <span
                             className="hidden"
@@ -636,7 +629,7 @@ function DimensionsTab({ workorderId }: { workorderId: string }) {
 
       <div className="border border-[var(--hairline)] rounded-md overflow-hidden">
         <div className="grid grid-cols-[1fr_120px_120px_120px_1fr_60px] gap-2 px-3 py-2.5 bg-[var(--secondary)]/40 border-b border-[var(--hairline)] text-[14px] font-mono uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-          <div>部位 · 来自 crm_字典_部位配置表</div>
+          <div>部位 · 从测量部位中选择</div>
           <div className="text-right">白胚 cm</div>
           <div className="text-right">色胚 cm</div>
           <div className="text-right">缩率 %</div>
@@ -652,13 +645,11 @@ function DimensionsTab({ workorderId }: { workorderId: string }) {
               key={r.id}
               className="grid grid-cols-[1fr_120px_120px_120px_1fr_60px] gap-2 px-3 py-2 items-center border-b border-[var(--hairline)] last:border-b-0 font-mono text-[14px]"
             >
-              <select
+              <SelectControl
                 value={r.part}
-                onChange={(e) => update(r.id, { part: e.target.value })}
-                className="bg-transparent border border-[var(--hairline)] rounded px-1.5 py-1 text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
-              >
-                {partOptions.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+                onValueChange={(value) => update(r.id, { part: value })}
+                options={partOptions.map((value) => ({ value, label: value }))}
+              />
 
               <input
                 type="number" min={0} step={0.5}
@@ -710,9 +701,7 @@ function DimensionsTab({ workorderId }: { workorderId: string }) {
       </div>
 
       <div className="border border-dashed border-[var(--hairline-strong)] rounded-md p-3 text-[14px] font-mono text-[var(--ink-mute)]">
-        💾 点「保存」将 {rows.length} 行写入 crm_打样工艺单_尺寸要求表，
-        每条记录的 <span className="text-[var(--ink)]">workorderId</span> 自动 link 到 crm_打样工艺单_基础信息表.{workorderId}。
-        缩率 = (白胚 − 色胚) ÷ 白胚 × 100%。
+        保存后更新本工艺单的 {rows.length} 条尺寸要求。缩率会根据白胚与色胚尺寸自动计算。
       </div>
     </div>
   );
