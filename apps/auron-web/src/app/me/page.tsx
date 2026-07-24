@@ -1,18 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { FabricLabel } from "@/components/domain/fabric-label";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/domain/kpi-card";
-import { MiniSparkline } from "@/components/domain/sparkline";
 import { cn } from "@/lib/utils";
 import {
   useCurrentUser,
   setCurrentUser,
-  relevantToMe,
   useActivities,
   DEMO_USERS,
   getRoleLabel,
@@ -43,7 +39,7 @@ export default function MePage() {
 
   return (
     <AdminShell>
-      <div className="px-8 py-8 mx-auto max-w-[1480px]">
+      <div className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <MeHeader me={me} />
 
         <RoleView role={me.role} />
@@ -140,7 +136,7 @@ function SalesView() {
 
       {/* KPI */}
       <section>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label="我的客户"   value="3"   unit="家"  delta={{ value: 0, period: "本周" }}          spark={[3,3,3,3,3,3,3]} sparkTone="neutral" href="/customers" />
           <KpiCard label="30 天 跟进"   value="8"   unit="次"  delta={{ value: 2, period: "本周" }}          spark={[2,3,4,5,6,7,8]} sparkTone="success" href="/crm/followups" />
           <KpiCard label="在手报价"   value="4"   unit="单"  delta={{ value: 0, period: "本周" }}          spark={[3,3,4,4,4,4,4]} sparkTone="neutral" href="/orders/quotations" />
@@ -181,7 +177,7 @@ function QuoterView() {
     <div className="space-y-8">
       <SectionTitle title={`${me.name} · 报价员视图`} sub={`报价核算、毛利复核和审批处理`} badge="报价员" />
       <section>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label="我报价的"     value="5"   unit="单"  delta={{ value: 0, period: "本月" }}     spark={[3,4,4,5,5,5,5]} sparkTone="primary" href="/orders/quotations" />
           <KpiCard label="待我审批"     value="2"   unit="件"  delta={{ value: 1, period: "今日", positive: false }} alert spark={[0,0,1,1,1,2,2]} sparkTone="danger" href="/orders/quotations" />
           <KpiCard label="平均含税毛利" value="32.4" unit="%" delta={{ value: -1.2, period: "环比", positive: false }} spark={[34,33,34,31,30,31,32]} sparkTone="warn" alert href="/orders/quotations" />
@@ -207,7 +203,7 @@ function KnitMasterView() {
     <div className="space-y-8">
       <SectionTitle title={`${me.name} · 前道师傅视图`} sub={`织造用料、纱线排列和工艺配方`} badge="前道师傅" />
       <section>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label="我巡检的批次" value="5" unit="个"  delta={{ value: 0, period: "今日" }}     spark={[5,4,6,5,5,5,5]} sparkTone="primary" href="/orders/sample-workorders" />
           <KpiCard label="待处理异常"   value="1" unit="单"  delta={{ value: 0, period: "本周" }}     spark={[0,0,1,1,1,1,1]} sparkTone="warn" alert href="/orders/sample-workorders/WO-2026-0317-A" />
           <KpiCard label="机台运行率"   value="92" unit="%"  delta={{ value: 3, period: "昨日" }}      spark={[80,84,87,89,90,91,92]} sparkTone="success" href="/dictionary/machines" />
@@ -236,7 +232,7 @@ function OrderView() {
     <div className="space-y-8">
       <SectionTitle title={`${me.name} · 业务跟单视图`} sub={`打样通知进度跟踪、辅料和交样对接`} badge="业务跟单" />
       <section>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label="我跟单的通知" value="5" unit="张" delta={{ value: 0, period: "本周" }} spark={[5,5,5,5,5,5,5]} sparkTone="primary" href="/orders/sample-notices" />
           <KpiCard label="今日催交辅料" value="2" unit="项" delta={{ value: 0, period: "今日" }} spark={[1,1,2,2,2,2,2]} sparkTone="warn" href="/orders/sample-notices" />
           <KpiCard label="打回需要重做" value="1" unit="张" delta={{ value: 0, period: "今日" }} spark={[0,0,0,1,1,1,1]} sparkTone="danger" alert href="/orders/sample-notices/SMPL-2026-0317-A" />
@@ -265,7 +261,7 @@ function SewMasterView() {
     <div className="space-y-8">
       <SectionTitle title={`${me.name} · 后道师傅视图`} sub={`染色、缝制、整烫和包装进度`} badge="后道师傅" />
       <section>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label="染色在产"     value="4" unit="批" delta={{ value: 0, period: "今日" }} spark={[3,4,4,4,4,4,4]} sparkTone="primary" href="/orders/sample-notices" />
           <KpiCard label="缝制在产"     value="6" unit="批" delta={{ value: 1, period: "本周" }} spark={[5,5,5,6,6,6,6]} sparkTone="success" href="/orders/sample-notices" />
           <KpiCard label="整烫在产"     value="2" unit="批" delta={{ value: 0, period: "今日" }} spark={[2,2,2,2,2,2,2]} sparkTone="neutral" href="/orders/sample-notices" />
@@ -304,20 +300,49 @@ function OwnerView() {
   );
 }
 
+const DIRECTOR_STATUS = [
+  { label: "未结打样", value: "2 单", note: "今日新增 1", href: "/orders/sample-notices", alert: true },
+  { label: "在档纱线", value: "12 款", note: "字典总数", href: "/dictionary/materials", alert: false },
+  { label: "逾期跟进", value: "2 个", note: "本周新增 1", href: "/crm/followups", alert: true },
+  { label: "待审报价", value: "2 件", note: "今日新增 1", href: "/orders/quotations", alert: true },
+] as const;
+
 function DirectorInner() {
   return (
     <section>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard label="年度营收"     value="¥ 6.5M"  delta={{ value: 12.4, period: "同比", positive: true }} spark={[3.2,3.5,3.3,3.8,4.2,5.1,6.5]} sparkTone="primary" href="/orders/quotations" />
         <KpiCard label="年度毛利"     value="¥ 1.7M"  delta={{ value: 2.1,  period: "环比", positive: true }} spark={[2.0,2.1,2.0,2.2,1.6,1.7,1.7]} sparkTone="success" href="/orders/quotations" />
         <KpiCard label="平均含税毛利" value="32.4%"   delta={{ value: -1.2, period: "环比", positive: false }} spark={[34,33,34,31,30,31,32]} sparkTone="warn" alert href="/orders/quotations" />
         <KpiCard label="在手工艺"     value="4 单"    delta={{ value: 0, period: "环比" }} spark={[6,5,5,4,5,4,4]} sparkTone="neutral" href="/orders/sample-workorders" />
-        <KpiCard label="未结打样"     value="2 单"    delta={{ value: 1, period: "今日", positive: false }} alert spark={[0,0,1,1,1,2,2]} sparkTone="danger" href="/orders/sample-notices" />
-        <KpiCard label="在档纱线"     value="12 款"   delta={{ value: 0, period: "字典行数" }} spark={[12,12,12,12,12,12,12]} sparkTone="neutral" href="/dictionary/materials" />
-        <KpiCard label="逾期跟进"     value="2 个"    delta={{ value: 1, period: "本周", positive: false }} alert spark={[0,0,1,1,1,2,2]} sparkTone="danger" href="/crm/followups" />
-        <KpiCard label="待审报价"     value="2 件"    delta={{ value: 1, period: "今日", positive: false }} alert spark={[0,0,0,1,1,2,2]} sparkTone="primary" href="/orders/quotations" />
       </div>
+      <DirectorStatusStrip />
     </section>
+  );
+}
+
+function DirectorStatusStrip() {
+  return (
+    <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--card)] lg:grid-cols-4">
+      {DIRECTOR_STATUS.map((item) => (
+        <Link
+          key={item.label}
+          href={item.href}
+          className="group border-b border-r border-[var(--hairline)] px-3 py-3 transition-colors hover:bg-[var(--accent)]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--primary)] lg:border-b-0"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[13px] text-[var(--ink-dim)]">{item.label}</span>
+            {item.alert ? (
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--destructive)]" aria-hidden />
+            ) : null}
+          </div>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-display text-[20px] font-medium tnum text-[var(--ink)]">{item.value}</span>
+            <span className="font-mono text-[12px] text-[var(--ink-mute)]">{item.note}</span>
+          </div>
+        </Link>
+      ))}
+    </div>
   );
 }
 
@@ -327,13 +352,13 @@ function DirectorInner() {
 
 function SectionTitle({ title, sub, badge }: { title: string; sub: string; badge: string }) {
   return (
-    <div className="flex items-end justify-between border-b border-[var(--hairline)] pb-3">
+    <div className="flex flex-col gap-3 border-b border-[var(--hairline)] pb-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-[14px] text-[var(--ink-mute)] mb-1.5">我的工作台</p>
-        <h1 className="font-display text-[32px] font-medium tracking-tight text-[var(--ink)]">{title}</h1>
+        <h1 className="font-display text-[28px] font-medium tracking-tight text-[var(--ink)] sm:text-[32px]">{title}</h1>
         <p className="mt-1 text-[14px] text-[var(--ink-dim)] max-w-[560px]">{sub}</p>
       </div>
-      <span className="text-[14px] px-2.5 py-1 rounded bg-[var(--accent)] text-[var(--ink)] border border-[var(--hairline-strong)]">
+      <span className="w-fit text-[14px] px-2.5 py-1 rounded bg-[var(--accent)] text-[var(--ink)] border border-[var(--hairline-strong)]">
         {badge}
       </span>
     </div>
@@ -358,7 +383,7 @@ function SectionSub({ title, href, count }: { title: string; href?: string; coun
 
 function CardList({ items }: { items: { href: string; title: string; subtitle: string; badge: React.ReactNode; right: { label: string; value: string | number; mono?: boolean }[] }[] }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
       {items.map((it, i) => (
         <Link
           key={i}
@@ -389,45 +414,49 @@ function CardList({ items }: { items: { href: string; title: string; subtitle: s
 
 function FollowupList({ items }: { items: { customer: string; contact: string; what: string; due: string; status: string }[] }) {
   return (
-    <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
-      {items.map((it, i) => (
-        <Link
-          key={i}
-          href="/crm/followups"
-          className="grid grid-cols-[80px_120px_1fr_120px_140px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
-        >
-          <Badge tone="info" size="sm">{it.status}</Badge>
-          <span className="text-[14px] font-medium text-[var(--ink)]">{it.customer}</span>
-          <span className="text-[14px] text-[var(--ink-dim)] truncate">{it.contact} · {it.what}</span>
-          <span className={cn("font-mono text-[14px]", it.due.startsWith("今") ? "text-[var(--warn)] font-medium" : "text-[var(--ink-dim)]")}>
-            {it.due}
-          </span>
-          <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-            跟进记录 →
-          </span>
-        </Link>
-      ))}
+    <div className="overflow-x-auto rounded-md border border-[var(--hairline)] bg-[var(--card)]">
+      <div className="min-w-[760px]">
+        {items.map((it, i) => (
+          <Link
+            key={i}
+            href="/crm/followups"
+            className="grid grid-cols-[80px_120px_1fr_120px_140px] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
+          >
+            <Badge tone="info" size="sm">{it.status}</Badge>
+            <span className="text-[14px] font-medium text-[var(--ink)]">{it.customer}</span>
+            <span className="text-[14px] text-[var(--ink-dim)] truncate">{it.contact} · {it.what}</span>
+            <span className={cn("font-mono text-[14px]", it.due.startsWith("今") ? "text-[var(--warn)] font-medium" : "text-[var(--ink-dim)]")}>
+              {it.due}
+            </span>
+            <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
+              跟进记录 →
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
 
 function QuoteList({ items }: { items: { doc: string; customer: string; product: string; amount: number; qty: string; status: string }[] }) {
   return (
-    <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
-      {items.map((it, i) => (
-        <Link
-          key={i}
-          href={`/orders/quotations/${it.doc}`}
-          className="grid grid-cols-[140px_120px_1fr_120px_100px_1fr] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
-        >
-          <span className="font-mono text-[14px] font-medium text-[var(--ink)]">{it.doc}</span>
-          <span className="text-[14px] text-[var(--ink-dim)]">{it.customer}</span>
-          <span className="text-[14px] text-[var(--ink)] truncate">{it.product}</span>
-          <span className="font-mono tnum text-[14px] text-[var(--ink)] text-right">¥{it.amount.toFixed(2)}</span>
-          <span className="font-mono text-[14px] text-[var(--ink-dim)]">{it.qty}</span>
-          <Badge tone="warn" size="sm">{it.status}</Badge>
-        </Link>
-      ))}
+    <div className="overflow-x-auto rounded-md border border-[var(--hairline)] bg-[var(--card)]">
+      <div className="min-w-[820px]">
+        {items.map((it, i) => (
+          <Link
+            key={i}
+            href={`/orders/quotations/${it.doc}`}
+            className="grid grid-cols-[140px_120px_1fr_120px_100px_1fr] gap-3 px-4 py-3 items-center border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--accent)]/40 transition-colors"
+          >
+            <span className="font-mono text-[14px] font-medium text-[var(--ink)]">{it.doc}</span>
+            <span className="text-[14px] text-[var(--ink-dim)]">{it.customer}</span>
+            <span className="text-[14px] text-[var(--ink)] truncate">{it.product}</span>
+            <span className="font-mono tnum text-[14px] text-[var(--ink)] text-right">¥{it.amount.toFixed(2)}</span>
+            <span className="font-mono text-[14px] text-[var(--ink-dim)]">{it.qty}</span>
+            <Badge tone="warn" size="sm">{it.status}</Badge>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

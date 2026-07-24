@@ -21,6 +21,7 @@ import {
   Receipt,
   Ruler,
   Scissors,
+  Search,
   ScrollText,
   Tag,
   User,
@@ -125,120 +126,133 @@ export function AdminShell({
   if (inDrawer) return <>{children}</>;
 
   return (
-    <div className="min-h-screen grid grid-rows-[48px_1fr] bg-[var(--background)]">
-      {/* —— 顶栏 —— */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 border-b border-[var(--hairline)] bg-[var(--card)]/90 backdrop-blur">
-        <div className="flex items-center gap-6">
-          <button
-            type="button"
-            aria-label={mobileNavOpen ? "关闭导航" : "打开导航"}
-            aria-expanded={mobileNavOpen}
-            onClick={() => setMobileNavOpen((open) => !open)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--ink-dim)] hover:bg-[var(--accent)] lg:hidden"
-          >
-            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          <Link href="/" className="flex items-center gap-2 group">
-            <LogoMark />
-            <span className="hidden font-display text-[18px] font-medium tracking-tight sm:inline">海豚服装智造</span>
-          </Link>
-          <div className="hidden md:block"><TenantSwitcher /></div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <NotificationBell />
-          <Whoami />
-        </div>
-      </header>
-
-      {/* —— 二级 —— */}
-      <div className="grid min-h-0 lg:grid-cols-[200px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-[var(--hairline)] bg-[var(--card)]/50 py-4 overflow-y-auto lg:block">
-          {nav.map((section) => (
-            <div key={section.group} className="mb-4">
-              <p className="px-4 pb-1 font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)]">
-                {section.group}
-              </p>
-              <ul>
-                {section.items.map((it) => (
-                  <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
-                ))}
-              </ul>
-            </div>
-          ))}
-        </aside>
-
-        {mobileNavOpen && (
-          <div className="fixed inset-0 top-12 z-40 lg:hidden">
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="grid min-h-screen grid-rows-[72px_1fr] overflow-hidden bg-[var(--background)]">
+        {/* —— 顶栏 —— */}
+        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--hairline)] bg-[var(--card)] px-4 lg:px-7">
+          <div className="flex min-w-0 items-center gap-4 lg:w-[245px]">
             <button
               type="button"
-              aria-label="关闭导航"
-              className="absolute inset-0 bg-black/20"
-              onClick={() => setMobileNavOpen(false)}
-            />
-            <aside className="relative h-full w-[260px] overflow-y-auto border-r border-[var(--hairline)] bg-[var(--card)] py-4 shadow-xl">
-              {nav.map((section) => (
-                <div key={section.group} className="mb-4">
-                  <p className="px-4 pb-1 font-mono text-[12px] text-[var(--ink-mute)]">{section.group}</p>
-                  <ul>
-                    {section.items.map((it) => (
-                      <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </aside>
+              aria-label={mobileNavOpen ? "关闭导航" : "打开导航"}
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--ink-dim)] hover:bg-[var(--secondary)] lg:hidden"
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <Link href="/" className="group flex shrink-0 items-center gap-2.5">
+              <LogoMark size={26} />
+              <span className="font-display text-[19px] font-semibold tracking-[-0.03em]">
+                AURON
+              </span>
+            </Link>
+            <div className="hidden md:block lg:hidden xl:block"><TenantSwitcher /></div>
           </div>
-        )}
 
-        <section className="grid min-h-0 grid-rows-[auto_1fr]">
-          {showPageHeader && (
-            <div className="border-b border-[var(--hairline)] bg-[var(--card)]/75 px-4 py-3.5 lg:px-8">
-              <nav className="mb-1.5 flex items-center text-[13px] text-[var(--ink-mute)]">
-                <span>{activeNav?.group ?? "工作台"}</span>
-              </nav>
+          <label className="mx-6 hidden h-11 max-w-[460px] flex-1 items-center gap-3 rounded-xl bg-[var(--secondary)] px-4 text-[var(--ink-mute)] lg:flex">
+            <Search className="h-4 w-4 shrink-0 text-[var(--ink)]" />
+            <span className="sr-only">全局搜索</span>
+            <input
+              type="search"
+              placeholder="搜索客户、报价、打样单..."
+              className="w-full bg-transparent text-[14px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-mute)]"
+            />
+          </label>
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="min-w-0">
-                  {pageTitle && (
-                    <h1 className="truncate text-[24px] font-medium leading-tight tracking-tight text-[var(--ink)]">
-                      {pageTitle}
-                    </h1>
-                  )}
-                  {pageDescription && (
-                    <p className="mt-1 max-w-[720px] text-[14px] leading-5 text-[var(--ink-dim)]">
-                      {pageDescription}
-                    </p>
-                  )}
-                </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Whoami />
+          </div>
+        </header>
 
-                {pageActions && (
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    {pageActions}
-                  </div>
-                )}
-              </div>
-
-              {pageMeta?.length ? (
-                <div className="mt-2.5 flex flex-wrap gap-2">
-                  {pageMeta.map((item) => (
-                    <span
-                      key={item.label}
-                      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--hairline)] bg-[var(--background)] px-2.5 text-[13px] text-[var(--ink-dim)]"
-                    >
-                      <span className="text-[var(--ink-mute)]">{item.label}</span>
-                      <span className="font-medium text-[var(--ink)]">{item.value}</span>
-                    </span>
+        <div className="grid min-h-0 lg:grid-cols-[245px_minmax(0,1fr)]">
+          <aside className="hidden overflow-y-auto border-r border-[var(--hairline)] bg-[var(--card)] px-3 py-5 lg:block">
+            {nav.map((section) => (
+              <div key={section.group} className="mb-5">
+                <p className="px-3 pb-2 text-[12px] font-medium uppercase tracking-[0.12em] text-[var(--ink-mute)]">
+                  {section.group}
+                </p>
+                <ul className="space-y-1">
+                  {section.items.map((it) => (
+                    <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
                   ))}
-                </div>
-              ) : null}
+                </ul>
+              </div>
+            ))}
+          </aside>
+
+          {mobileNavOpen && (
+            <div className="fixed inset-0 top-[72px] z-40 lg:hidden">
+              <button
+                type="button"
+                aria-label="关闭导航"
+                className="absolute inset-0 bg-black/25 backdrop-blur-sm"
+                onClick={() => setMobileNavOpen(false)}
+              />
+              <aside className="relative h-full w-[280px] overflow-y-auto border-r border-[var(--hairline)] bg-[var(--card)] px-3 py-5 shadow-2xl">
+                {nav.map((section) => (
+                  <div key={section.group} className="mb-5">
+                    <p className="px-3 pb-2 text-[12px] font-medium uppercase tracking-[0.12em] text-[var(--ink-mute)]">{section.group}</p>
+                    <ul className="space-y-1">
+                      {section.items.map((it) => (
+                        <NavItem key={it.href} item={it} active={isActive(pathname, it.href)} />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </aside>
             </div>
           )}
 
-          <main className="overflow-auto bg-[var(--background)]">
-            {children}
-          </main>
-        </section>
+          <section className="grid min-h-0 grid-rows-[auto_1fr]">
+            {showPageHeader && (
+              <div className="bg-[var(--background)] px-4 pb-3 pt-6 lg:px-7 lg:pb-4 lg:pt-7">
+                <nav className="mb-2 flex items-center text-[13px] font-medium text-[var(--ink-mute)]">
+                  <span>{activeNav?.group ?? "工作台"}</span>
+                </nav>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
+                    {pageTitle && (
+                      <h1 className="truncate text-[30px] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink)] lg:text-[34px]">
+                        {pageTitle}
+                      </h1>
+                    )}
+                    {pageDescription && (
+                      <p className="mt-1.5 max-w-[760px] text-[14px] leading-6 text-[var(--ink-dim)]">
+                        {pageDescription}
+                      </p>
+                    )}
+                  </div>
+
+                  {pageActions && (
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      {pageActions}
+                    </div>
+                  )}
+                </div>
+
+                {pageMeta?.length ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {pageMeta.map((item) => (
+                      <span
+                        key={item.label}
+                        className="inline-flex h-8 items-center gap-2 rounded-xl border border-[var(--hairline)] bg-[var(--card)] px-3 text-[13px] text-[var(--ink-dim)]"
+                      >
+                        <span className="text-[var(--ink-mute)]">{item.label}</span>
+                        <span className="font-semibold text-[var(--ink)]">{item.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            <main className="overflow-auto bg-[var(--background)]">
+              {children}
+            </main>
+          </section>
+        </div>
       </div>
     </div>
   );
@@ -272,20 +286,20 @@ function NavItem({
         href={item.href}
         aria-current={active ? "page" : undefined}
         className={
-          "flex items-center gap-2.5 px-4 h-8 border-l-2 text-[14px] transition-colors " +
+          "flex h-11 items-center gap-3 rounded-xl border-l-[3px] px-3 text-[15px] transition-colors " +
           (active
-            ? "border-[var(--primary)] bg-[var(--accent)]/70 text-[var(--ink)] font-medium"
-            : "border-transparent text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--primary)]")
+            ? "border-[var(--ink)] bg-[var(--secondary)] font-semibold text-[var(--ink)]"
+            : "border-transparent text-[var(--ink-dim)] hover:bg-[var(--secondary)] hover:text-[var(--ink)]")
         }
       >
-        <Icon className={active ? "h-4 w-4 text-[var(--primary)]" : "h-4 w-4 text-[var(--ink-mute)]"} />
+        <Icon className={active ? "h-[18px] w-[18px] text-[var(--ink)]" : "h-[18px] w-[18px] text-[var(--ink-dim)]"} strokeWidth={1.8} />
         <span className="truncate">{item.label}</span>
       </Link>
     </li>
   );
 }
 
-const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+const NAV_ICONS: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
   BellRing,
   Cog,
   Contact,
@@ -319,30 +333,28 @@ function TenantSwitcher() {
       <button
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setTimeout(() => setOpen(false), 200)}
-        className="flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--hairline-strong)] hover:border-[var(--primary)] hover:bg-[var(--accent)] transition-colors"
+        className="flex h-10 items-center gap-2 rounded-xl border border-[var(--hairline)] bg-[var(--card)] px-3 transition-colors hover:bg-[var(--secondary)]"
       >
-        <span className="w-2 h-2 rounded-full bg-[var(--success)]" />
+        <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
         <span className="text-[14px] font-medium">{tenant.name}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className={open ? "rotate-180 transition-transform text-[var(--primary)]" : "text-[var(--ink-mute)] transition-transform"}>
           <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
-        <div className="absolute top-9 left-0 z-50 w-[200px] border border-[var(--hairline)] rounded-md bg-[var(--card)] shadow-lg overflow-hidden">
+        <div className="absolute left-0 top-11 z-50 w-[220px] overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--card)] shadow-xl">
           {TENANTS.map((t) => (
             <button
               key={t.key}
               onClick={() => { setCurrentTenant(t.key); setOpen(false); }}
               className={
-                "w-full flex items-center gap-2 px-3 py-2 text-left text-[14px] hover:bg-[var(--accent)] transition-colors " +
+                "flex w-full items-center gap-2 px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-[var(--secondary)] " +
                 (tenant.key === t.key ? "bg-[var(--accent)] font-medium" : "text-[var(--ink-dim)]")
               }
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.tone === "primary" ? "var(--primary)" : t.tone === "info" ? "var(--info)" : "var(--success)" }} />
               <span className="flex-1">{t.name}</span>
-              {tenant.key === t.key && (
-                <span className="font-mono text-[14px] text-[var(--primary)]">●</span>
-              )}
+              {tenant.key === t.key && <span className="text-[14px] font-semibold text-[var(--success)]">✓</span>}
             </button>
           ))}
         </div>
@@ -358,14 +370,14 @@ function NotificationBell() {
     <Link
       href="/inbox"
       title={unread > 0 ? `${unread} 条未读` : "通知中心"}
-      className="relative w-8 h-8 rounded-md hover:bg-[var(--accent)] flex items-center justify-center text-[var(--ink-dim)]"
+      className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hairline)] bg-[var(--card)] text-[var(--ink)] transition-colors hover:bg-[var(--secondary)]"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
         <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
       </svg>
       {unread > 0 && (
-        <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-[14px] font-mono font-medium flex items-center justify-center">
+        <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
           {unread > 9 ? "9+" : unread}
         </span>
       )}
@@ -384,23 +396,23 @@ function Whoami() {
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setTimeout(() => setOpen(false), 200)}
         title="点击切换演示用户"
-        className="flex items-center gap-2 h-8 px-2 rounded-md hover:bg-[var(--accent)] transition-colors"
+        className="flex h-10 items-center gap-2 rounded-xl border border-[var(--hairline)] bg-[var(--card)] px-1.5 transition-colors hover:bg-[var(--secondary)] min-[430px]:px-2.5"
       >
-        <span className="w-7 h-7 rounded-full bg-[var(--ink)] text-[var(--background)] flex items-center justify-center text-[14px] font-mono font-medium">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--ink)] text-[13px] font-semibold text-white">
           {me.initials}
         </span>
-        <div className="flex flex-col items-start leading-tight">
+        <div className="hidden flex-col items-start leading-tight min-[430px]:flex">
           <span className="text-[14px] font-medium text-[var(--ink)]">{me.name}</span>
           <span className="text-[12px] text-[var(--ink-mute)]">
             {getRoleLabel(me.role)} · {me.dept}
           </span>
         </div>
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className={open ? "rotate-180 transition-transform" : "transition-transform text-[var(--ink-mute)]"}>
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className={(open ? "rotate-180 " : "") + "hidden transition-transform text-[var(--ink-mute)] min-[430px]:block"}>
           <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
-        <div className="absolute top-9 right-0 z-50 w-[240px] border border-[var(--hairline)] rounded-md bg-[var(--card)] shadow-lg overflow-hidden">
+        <div className="absolute right-0 top-11 z-50 w-[260px] overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--card)] shadow-xl">
           <p className="px-3 py-2 font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--ink-mute)] bg-[var(--secondary)]/40 border-b border-[var(--hairline)]">
             演示态 · 切换用户
           </p>

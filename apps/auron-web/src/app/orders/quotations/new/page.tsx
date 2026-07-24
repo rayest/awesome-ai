@@ -522,7 +522,7 @@ export default function NewQuotationPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/[0.035] p-4">
+            <section className="rounded-lg bg-[var(--accent)]/45 p-4">
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
                 <div>

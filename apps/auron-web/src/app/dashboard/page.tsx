@@ -1,314 +1,576 @@
 "use client";
 
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { KpiCard } from "@/components/domain/kpi-card";
-import { MiniSparkline } from "@/components/domain/sparkline";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { getRoleLabel, type Role } from "@/lib/demo-state";
+import { useState } from "react";
 import {
   AlertTriangle,
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Receipt,
   ArrowUpRight,
+  Boxes,
+  CalendarDays,
+  ChevronRight,
+  CircleDollarSign,
+  Clock3,
+  FileCheck2,
+  Factory,
+  Plus,
+  Receipt,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from "lucide-react";
+import { AdminShell } from "@/components/layout/admin-shell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-/**
- * Dashboard · 厂长视角
- *
- * 三大块（自上而下）：
- *  1. 唛头速览：今日关键流水
- *  2. KPI 8 卡：年度营收/毛利/平均客单/报价转化/在手工艺/待审/低库存/逾期
- *  3. 双栏：
- *     - 今日待办（按角色）
- *     - 需关注的异常（margin / 库存 / 跟进 / 打样 4 类）
- *
- * 设计原则：
- *  - 全 mono 数字
- *  - KPI 卡可点击直达（href 跳转）
- *  - sparkline 自动着色（同 direction）
- *  - 异常按 alert 框标红
- *  - 没有饼图、没有大屏、没有装饰渐变
- */
+const FLOW_DATA = [
+  { day: "周日", quote: 9.2, profit: 2.1, risk: -1.6 },
+  { day: "周一", quote: 7.8, profit: 1.8, risk: -1.2 },
+  { day: "周二", quote: 11.5, profit: 2.8, risk: -2.4 },
+  { day: "周三", quote: 14.6, profit: 4.8, risk: -3.1 },
+  { day: "周四", quote: 13.2, profit: 3.5, risk: -2.7 },
+  { day: "周五", quote: 16.8, profit: 4.3, risk: -4.2 },
+  { day: "周六", quote: 18.4, profit: 3.9, risk: -5.1 },
+] as const;
+
+const TODO_GROUPS = [
+  {
+    key: "priority",
+    label: "重点",
+    items: [
+      { role: "业务员", time: "11:30", title: "弘大马经理 · 辅料清单确认", href: "/crm/followups?customer=CUST-HD-002" },
+      { role: "业务跟单", time: "12:00", title: "卫衣辅料清单送到乾盛", href: "/orders/sample-notices?customer=CUST-QS-001" },
+      { role: "报价员", time: "14:00", title: "完成 Q-0318 染色工艺重算", href: "/orders/quotations?customer=CUST-HD-002" },
+      { role: "老板", time: "17:00", title: "审批乾盛 200 件报价", href: "/orders/quotations/Q-0317-A?customer=CUST-QS-001", alert: true },
+      { role: "老板", time: "18:00", title: "复核染厂涨价对本月的影响", href: "/settings/audit" },
+    ],
+  },
+  {
+    key: "approval",
+    label: "审批",
+    items: [
+      { role: "老板", time: "17:00", title: "审批乾盛 200 件报价", href: "/orders/quotations/Q-0317-A?customer=CUST-QS-001", alert: true },
+      { role: "老板", time: "18:00", title: "确认染厂涨价调整方案", href: "/settings/audit" },
+    ],
+  },
+  {
+    key: "workshop",
+    label: "工坊",
+    items: [
+      { role: "前道师傅", time: "14:00", title: "老周 · 织造中巡检 5 批次", href: "/orders/sample-workorders?master=%E8%80%81%E5%91%A8" },
+      { role: "前道师傅", time: "16:30", title: "阿亮 · 高领打底试产首件", href: "/dictionary/machines?type=%E9%AB%98%E9%80%9F%E6%9C%BA" },
+      { role: "业务跟单", time: "17:20", title: "确认乾盛辅料到厂状态", href: "/orders/sample-notices?customer=CUST-QS-001" },
+    ],
+  },
+] as const;
+
+const DELIVERY_GOALS = [
+  { label: "本周报价", value: "18 / 24", progress: 75, tone: "lime" },
+  { label: "打样交付", value: "9 / 12", progress: 75, tone: "yellow" },
+  { label: "大货确认", value: "6 / 10", progress: 60, tone: "orange" },
+] as const;
+
+const ALERTS = [
+  {
+    severity: "danger",
+    title: "染色毛利低于 15%",
+    body: "4 张报价受染料涨价影响，需要重新核算。",
+    meta: "预计影响 ¥18,400",
+    href: "/orders/quotations",
+  },
+  {
+    severity: "warn",
+    title: "跟进超期 7 天",
+    body: "巧岛、霞飞两个客户超过一周未触达。",
+    meta: "最久 62 天",
+    href: "/crm/followups",
+  },
+  {
+    severity: "info",
+    title: "物料字段待补齐",
+    body: "安全库存尚未进入物料字典，暂不生成库存预警。",
+    meta: "需要产品确认",
+    href: "/dictionary/materials",
+  },
+] as const;
 
 export default function DashboardPage() {
   return (
     <AdminShell
       pageTitle="经营总览"
-      pageKicker="今日总览"
-      pageDescription="老板视角查看今日经营、待办和异常，优先处理会影响交期、报价和毛利的事项。"
+      pageDescription="把报价、毛利、交付和异常放在同一个经营视图里。"
       pageActions={(
         <>
           <Button variant="outline" size="md">
-            <Calendar className="w-4 h-4" />
-            切换日期
+            <CalendarDays className="h-4 w-4" />
+            2026 年 7 月
           </Button>
           <Button variant="default" size="md">
-            <Receipt className="w-4 h-4" />
-            今日报价单
+            <Plus className="h-4 w-4" />
+            新建报价
           </Button>
         </>
       )}
       pageMeta={[
-        { label: "在途订单", value: "18.6w" },
+        { label: "当前租户", value: "乾盛服饰" },
         { label: "待处理", value: 5 },
         { label: "异常", value: 3 },
       ]}
     >
-      <div className="px-8 py-8 mx-auto max-w-[1480px]">
-        {/* 一、核心 KPI (8 卡) ——
-             派生：年度营收/毛利/转化率 在手工艺/逾期跟进 → 都从对应 crm_* 表聚合
-             在档纱线 → crm_字典_物料信息表 行数
-        */}
-        <section className="mb-10">
-          <p className="font-display text-[18px] font-medium mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[var(--primary)]" />
-            关键指标
-            <span className="font-mono text-[14px] text-[var(--ink-mute)]">聚合多表</span>
-          </p>
-          <div className="grid grid-cols-4 gap-3">
-            <KpiCard
-              label="年度营收"
-              value="¥ 6.5M"
-              delta={{ value: 12.4, period: "同比", positive: true }}
-              spark={[3.2, 3.5, 3.3, 3.8, 4.2, 5.1, 6.5]}
-              sparkTone="primary"
-              href="/orders/quotations"
-            />
-            <KpiCard
-              label="年度毛利"
-              value="¥ 1.7M"
-              delta={{ value: 2.1, period: "环比", positive: true }}
-              spark={[2.0, 2.1, 2.0, 2.2, 1.6, 1.7, 1.7]}
-              sparkTone="success"
-              href="/orders/quotations"
-            />
-            <KpiCard
-              label="平均含税毛利"
-              value="32.4"
-              unit="%"
-              delta={{ value: -1.2, period: "环比", positive: false }}
-              spark={[34, 33, 34, 31, 30, 31, 32]}
-              sparkTone="warn"
-              alert
-              href="/orders/quotations"
-            />
-            <KpiCard
-              label="报价转化率"
-              value="64"
-              unit="%"
-              delta={{ value: 8.2, period: "同比", positive: true }}
-              spark={[55, 58, 57, 60, 62, 63, 64]}
-              sparkTone="success"
-              href="/crm/followups"
-            />
-            <KpiCard
-              label="在手工艺"
-              value="4"
-              unit="单"
-              delta={{ value: 0, period: "环比" }}
-              spark={[6, 5, 5, 4, 5, 4, 4]}
-              sparkTone="neutral"
-              href="/orders/sample-workorders"
-            />
-            <KpiCard
-              label="未结打样"
-              value="2"
-              unit="单"
-              delta={{ value: 1, period: "今日新增", positive: false }}
-              alert
-              href="/orders/sample-notices"
-            />
-            <KpiCard
-              label="在档纱线"
-              value="12"
-              unit="款"
-              delta={{ value: 0, period: "字典行数" }}
-              spark={[12, 12, 12, 12, 12, 12, 12]}
-              sparkTone="neutral"
-              href="/dictionary/materials"
-            />
-            <KpiCard
-              label="逾期跟进"
-              value="2"
-              unit="个"
-              delta={{ value: 1, period: "本周新增", positive: false }}
-              spark={[0, 0, 1, 1, 1, 2, 2]}
-              sparkTone="danger"
-              alert
-              href="/crm/followups"
-            />
-          </div>
-        </section>
+      <div className="mx-auto max-w-[1660px] px-4 pb-8 sm:px-6 lg:px-7">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-4">
+            <BusinessOverview />
 
-        {/* 二、今日动态 (双栏) */}
-        <section className="grid grid-cols-2 gap-6 mb-10">
-          {/* 左：今日待办 */}
-          <div>
-            <p className="font-display text-[18px] font-medium mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[var(--info)]" />
-              今日待办
-              <span className="font-mono text-[14px] text-[var(--ink-mute)]">按角色</span>
-            </p>
-            <div className="border border-[var(--hairline)] rounded-md overflow-hidden bg-[var(--card)]">
-              <TodoGroup role="OWNER" color="var(--ink)" items={[
-                { time: "今 17:00", title: "审批乾盛 200 件报价（¥ 41,640）", href: "/orders/quotations/Q-0317-A?customer=CUST-QS-001", alert: true },
-                { time: "今 18:00", title: "复核老周染厂价 7/22 涨价对本月的影响", href: "/settings/audit" },
-              ]} />
-              <TodoGroup role="QUOTER" color="var(--primary)" items={[
-                { time: "今 14:00", title: "完成 Q-0318 染色工艺重算", href: "/orders/quotations?customer=CUST-HD-002" },
-                { time: "今 16:30", title: "回复巧岛采购（重算报价）", href: "/orders/quotations/Q-0314-C?customer=CUST-QD-044" },
-              ]} />
-              <TodoGroup role="SALES" color="var(--info)" items={[
-                { time: "今 11:30", title: "弘大马经理 — 辅料清单确认", href: "/crm/followups?customer=CUST-HD-002" },
-                { time: "今 14:00", title: "鸣笛丁工 — 到访工厂", href: "/crm/followups?customer=CUST-MD-019" },
-                { time: "今 16:00", title: "乾盛陈总 — 200 件大货确认", href: "/crm/followups?customer=CUST-QS-001" },
-                { time: "今 17:00", title: "巧岛张设计 — 色牢度被打回，重新算", href: "/crm/followups?customer=CUST-QD-044" },
-              ]} />
-              <TodoGroup role="KNIT_MASTER" color="var(--success)" items={[
-                { time: "今 14:00", title: "老周 — 织造中巡检（5 个批次）", href: "/orders/sample-workorders?master=%E8%80%81%E5%91%A8" },
-                { time: "今 16:30", title: "阿亮 — 高领打底试产首件", href: "/dictionary/machines?type=%E9%AB%98%E9%80%9F%E6%9C%BA" },
-              ]} />
-              <TodoGroup role="ORDER" color="var(--warn)" items={[
-                { time: "今 12:00", title: "王姐 — 卫衣辅料清单送到乾盛", href: "/orders/sample-notices?customer=CUST-QS-001" },
-              ]} />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <MarginCard />
+              <HealthCard />
+              <DeliveryCard />
             </div>
+
+            <section>
+              <SectionHeading
+                title="需要关注"
+                subtitle="3 项业务风险"
+                icon={<AlertTriangle className="h-4 w-4" />}
+              />
+              <div className="grid gap-3 lg:grid-cols-3">
+                {ALERTS.map((alert) => (
+                  <AlertCard key={alert.title} {...alert} />
+                ))}
+              </div>
+            </section>
+
+            <TeamPulse />
           </div>
 
-          {/* 右：需关注的异常 */}
-          <div>
-            <p className="font-display text-[18px] font-medium mb-3 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-[var(--destructive)]" />
-              需关注的异常
-              <span className="font-mono text-[14px] text-[var(--destructive)] bg-[oklch(0.95_0.04_22)] px-1.5 py-0.5 rounded">3 个</span>
-            </p>
-            <div className="space-y-3">
-              <AlertCard
-                severity="danger"
-                title="染色毛利 < 15% — 4 单受影响"
-                body="7/22 起天丝 LF 染料涨价 12%。涉及：Q-0315-A、T-0317-临时、Q-0314-D、T-0318-A。建议重新核算。"
-                href="/orders/quotations"
-                cta="立即重算"
-              />
-              <AlertCard
-                severity="info"
-                title="物料字典状态 — crm 实际未支撑库存"
-                body="crm_字典_物料信息表不存储库存/安全库存字段。前端不再模拟低库存预警。请确认是否要新增库存字段、补 crm 表或换形式。"
-                href="/dictionary/materials"
-                cta="去字典"
-              />
-              <AlertCard
-                severity="warn"
-                title="跟进超期 7 天未触达 — 2 个客户"
-                body="巧岛（62 天前最后联系）、霞飞（62 天前最后联系）。3 个月无业务往来。"
-                href="/crm/followups"
-                cta="激活"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* 三、流水与趋势 */}
-        <section className="mb-10">
-          <p className="font-display text-[18px] font-medium mb-3 flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-[var(--ink-dim)]" />
-            流水 · 趋势
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            <TrendBlock
-              title="7 天营收走势"
-              sub="今日 ¥ 8.2w"
-              values={[4.2, 5.8, 6.1, 7.4, 6.9, 7.8, 8.2]}
-              tone="primary"
-              unit="万 ¥"
-              peak="周五峰值 ¥7.8w"
-            />
-            <TrendBlock
-              title="7 天毛利走势"
-              sub="今日 32.4%"
-              values={[31, 33, 30, 32, 28, 30, 32]}
-              tone="success"
-              unit="%"
-              peak="周二峰值 33%"
-            />
-            <TrendBlock
-              title="30 天报价转化"
-              sub="转化率 64%"
-              values={[50, 55, 55, 60, 58, 60, 64]}
-              tone="warn"
-              unit="%"
-              peak="本周峰值 64%"
-            />
-          </div>
-        </section>
-
-        {/* 四、人员 */}
-        <section>
-          <p className="font-display text-[18px] font-medium mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4 text-[var(--ink-dim)]" />
-            团队
-          </p>
-          <div className="grid grid-cols-4 gap-3">
-            <PersonStat role="OWNER" name="李白" today="审批 1 件 / 浏览报价 12 条" />
-            <PersonStat role="DIRECTOR" name="陈总" today="查阅毛利 1 次 / 审计 0 条" />
-            <PersonStat role="SALES" name="刘韬 · 亚明" today="客户跟进 5 次" />
-            <PersonStat role="KNIT_MASTER" name="老周 · 阿亮" today="工艺巡检 5 批次" />
-          </div>
-        </section>
+          <aside className="space-y-4">
+            <QuickActions />
+            <TodoPanel />
+            <OperationSnapshot />
+          </aside>
+        </div>
       </div>
     </AdminShell>
   );
 }
 
-/* ─── Helpers ─── */
+function BusinessOverview() {
+  const [range, setRange] = useState<"7d" | "30d">("7d");
 
-function TodoGroup({
-  role,
-  color,
-  items,
+  return (
+    <section className="overflow-hidden rounded-2xl bg-[var(--card)]">
+      <div className="flex flex-col gap-4 px-5 pb-2 pt-5 sm:flex-row sm:items-start sm:justify-between lg:px-6 lg:pt-6">
+        <div>
+          <p className="text-[14px] text-[var(--ink-mute)]">本周确认报价</p>
+          <div className="mt-1 flex flex-wrap items-end gap-3">
+            <strong className="text-[42px] font-semibold leading-none tracking-[-0.055em] text-[var(--ink)] sm:text-[48px]">
+              ¥82,400
+            </strong>
+            <span className="mb-1 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--success)]">
+              <TrendingUp className="h-3.5 w-3.5" />
+              5.1% 较上周
+            </span>
+          </div>
+        </div>
+
+        <div className="flex rounded-xl bg-[var(--secondary)] p-1">
+          {(["7d", "30d"] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setRange(item)}
+              className={cn(
+                "h-8 rounded-lg px-3 text-[13px] font-medium transition-colors",
+                range === item
+                  ? "bg-[var(--card)] text-[var(--ink)] shadow-sm"
+                  : "text-[var(--ink-mute)] hover:text-[var(--ink)]"
+              )}
+            >
+              {item === "7d" ? "7 天" : "30 天"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_230px]">
+        <div className="min-w-0 px-2 pb-4 sm:px-4 lg:px-5">
+          <div className="mb-2 flex flex-wrap items-center gap-4 px-2 text-[12px] text-[var(--ink-dim)]">
+            <LegendDot color="var(--chart-lime)" label="确认报价" />
+            <LegendDot color="var(--chart-yellow)" label="预计毛利" />
+            <LegendDot color="var(--chart-orange)" label="风险敞口" />
+          </div>
+          <BusinessBarChart />
+        </div>
+
+        <div className="grid border-t border-[var(--divider)] sm:grid-cols-3 lg:block lg:border-l lg:border-t-0">
+          <MetricSummary label="年度营收" value="¥650万" delta="12.4%" positive />
+          <MetricSummary label="年度毛利" value="¥170万" delta="2.1%" positive />
+          <MetricSummary label="风险敞口" value="¥18.4万" delta="15.5%" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="h-2.5 w-2.5 rounded-[3px]" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
+}
+
+function BusinessBarChart() {
+  const [activeIndex, setActiveIndex] = useState(3);
+  const active = FLOW_DATA[activeIndex];
+
+  return (
+    <div
+      className="relative h-[280px] w-full overflow-hidden"
+      role="img"
+      aria-label="最近七天确认报价、预计毛利和风险敞口柱状图"
+    >
+      <div
+        className="pointer-events-none absolute z-20 min-w-[150px] -translate-x-1/2 rounded-xl bg-[var(--card)] p-3 text-[11px] shadow-[0_14px_36px_rgba(20,24,18,0.14)]"
+        style={{
+          left: `${((activeIndex + 0.5) / FLOW_DATA.length) * 100}%`,
+          top: `${Math.max(10, 124 - (active.quote + active.profit) * 3)}px`,
+        }}
+      >
+        <p className="mb-2 font-medium text-[var(--ink-mute)]">{active.day} · 2026 年 7 月</p>
+        <p className="flex items-center justify-between gap-4">
+          <span className="text-[var(--ink-dim)]">确认报价</span>
+          <strong>{active.quote.toFixed(1)} 万</strong>
+        </p>
+        <p className="mt-1 flex items-center justify-between gap-4">
+          <span className="text-[var(--ink-dim)]">预计毛利</span>
+          <strong>{active.profit.toFixed(1)} 万</strong>
+        </p>
+        <p className="mt-1 flex items-center justify-between gap-4">
+          <span className="text-[var(--ink-dim)]">风险敞口</span>
+          <strong>{Math.abs(active.risk).toFixed(1)} 万</strong>
+        </p>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-9 bottom-[58px] top-3 flex flex-col justify-between">
+        {[20, 15, 10, 5, 0].map((tick) => (
+          <div key={tick} className="relative border-t border-[var(--divider)]">
+            <span className="absolute -left-8 -top-2 text-[10px] text-[var(--ink-mute)]">{tick}万</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute inset-x-9 bottom-7 top-3 grid grid-cols-7 gap-3">
+        {FLOW_DATA.map((item) => (
+          <button
+            key={item.day}
+            type="button"
+            onMouseEnter={() => setActiveIndex(FLOW_DATA.indexOf(item))}
+            onFocus={() => setActiveIndex(FLOW_DATA.indexOf(item))}
+            onClick={() => setActiveIndex(FLOW_DATA.indexOf(item))}
+            className="grid min-w-0 grid-rows-[1fr_42px_22px] rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+            aria-label={`${item.day}，确认报价 ${item.quote} 万，预计毛利 ${item.profit} 万，风险敞口 ${Math.abs(item.risk)} 万`}
+          >
+            <div className="flex flex-col justify-end">
+              <div
+                className="mx-auto w-[62%] min-w-5 rounded-t-[7px] bg-[var(--chart-yellow)]"
+                style={{ height: `${item.profit * 5}px` }}
+                title={`${item.day}预计毛利 ${item.profit} 万`}
+              />
+              <div
+                className="mx-auto w-[62%] min-w-5 bg-[var(--chart-lime)]"
+                style={{ height: `${item.quote * 5}px` }}
+                title={`${item.day}确认报价 ${item.quote} 万`}
+              />
+            </div>
+            <div className="border-t border-[var(--hairline-strong)]">
+              <div
+                className="mx-auto w-[62%] min-w-5 rounded-b-[7px] bg-[var(--chart-orange)]"
+                style={{ height: `${Math.abs(item.risk) * 5}px` }}
+                title={`${item.day}风险敞口 ${Math.abs(item.risk)} 万`}
+              />
+            </div>
+            <span className="pt-2 text-center text-[11px] text-[var(--ink-mute)]">{item.day}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MetricSummary({
+  label,
+  value,
+  delta,
+  positive,
 }: {
-  role: Role;
-  color: string;
-  items: { time: string; title: string; href: string; alert?: boolean }[];
+  label: string;
+  value: string;
+  delta: string;
+  positive?: boolean;
 }) {
   return (
-    <div className="border-b border-[var(--hairline)] last:border-b-0">
-      <div className="px-3 py-2 bg-[var(--secondary)]/30 flex items-center gap-2">
-        <span
-          className="font-mono text-[14px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded"
-          style={{ background: color + "20", color }}
-        >
-          {getRoleLabel(role)}
-        </span>
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">
-          {items.length} 项
-        </span>
-      </div>
-      {items.map((it, i) => (
-        <Link
-          key={i}
-          href={it.href}
-          className="block px-3 py-2.5 hover:bg-[var(--accent)]/30 border-b border-[var(--hairline)] last:border-b-0 transition-colors group"
-        >
-          <div className="flex items-start gap-3">
-            <span className="font-mono text-[14px] text-[var(--ink-mute)] shrink-0 pt-0.5 w-[58px]">
-              {it.time}
-            </span>
-            <span className="flex-1 text-[14px] text-[var(--ink)] leading-snug">
-              {it.alert && (
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--destructive)] mr-1.5 align-middle" />
-              )}
-              {it.title}
-            </span>
-            <ArrowUpRight className="w-3 h-3 text-[var(--ink-mute)] group-hover:text-[var(--primary)] shrink-0 mt-0.5" />
-          </div>
-        </Link>
-      ))}
+    <div className="border-b border-[var(--divider)] px-5 py-5 last:border-b-0 lg:py-6">
+      <p className="text-[13px] text-[var(--ink-dim)]">{label}</p>
+      <strong className="mt-1 block text-[29px] font-semibold tracking-[-0.045em] text-[var(--ink)]">{value}</strong>
+      <span className={cn(
+        "mt-1 inline-flex items-center gap-1 text-[12px] font-medium",
+        positive ? "text-[var(--success)]" : "text-[var(--warn)]"
+      )}>
+        {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+        {delta} 较上月
+      </span>
     </div>
+  );
+}
+
+function MarginCard() {
+  const segments = [
+    { label: "织造", value: 18, color: "var(--chart-orange)" },
+    { label: "染色", value: 7, color: "#f3c95c" },
+    { label: "辅料", value: 6, color: "var(--chart-yellow)" },
+    { label: "工费", value: 9, color: "#b8d85d" },
+    { label: "毛利", value: 32, color: "var(--chart-lime)" },
+  ];
+
+  return (
+    <article className="rounded-2xl bg-[var(--card)] p-5">
+      <CardTitle title="成本分析" subtitle="本月报价结构" action="7 月" />
+      <strong className="mt-8 block text-[38px] font-semibold tracking-[-0.05em]">¥84.5万</strong>
+      <div className="mt-4 flex h-8 overflow-hidden rounded-lg bg-[var(--secondary)]">
+        {segments.map((segment) => (
+          <span
+            key={segment.label}
+            className="h-full border-r-2 border-white last:border-r-0"
+            style={{ width: `${segment.value}%`, backgroundColor: segment.color }}
+            title={`${segment.label} ${segment.value}%`}
+          />
+        ))}
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2">
+        {segments.map((segment) => (
+          <div key={segment.label} className="flex items-center justify-between gap-3 text-[12px]">
+            <LegendDot color={segment.color} label={segment.label} />
+            <span className="font-medium text-[var(--ink-dim)]">{segment.value}%</span>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function HealthCard() {
+  return (
+    <article className="rounded-2xl bg-[var(--card)] p-5">
+      <CardTitle title="经营健康度" subtitle="聚合近 30 天指标" action="30 天" />
+      <div className="mt-9 text-center">
+        <strong className="block text-[46px] font-semibold leading-none tracking-[-0.055em]">82%</strong>
+        <span className="mt-2 block text-[12px] text-[var(--ink-mute)]">报价与交付处于健康区间</span>
+        <div className="mt-6 grid grid-cols-10 gap-1" role="img" aria-label="经营健康度 82%">
+          {Array.from({ length: 10 }, (_, index) => (
+            <span
+              key={index}
+              className={cn(
+                "h-7 rounded-md",
+                index < 8 ? "bg-[var(--chart-lime)]" : "bg-[var(--secondary)]",
+                index === 8 && "bg-[var(--chart-yellow)]"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+      <p className="mt-1 text-[13px] leading-5 text-[var(--ink-dim)]">
+        毛利稳定，但染色成本上涨，需要优先重算 4 张报价。
+      </p>
+    </article>
+  );
+}
+
+function DeliveryCard() {
+  return (
+    <article className="rounded-2xl bg-[var(--card)] p-5 md:col-span-2 xl:col-span-1">
+      <CardTitle title="本周目标" subtitle="核心经营动作" action="+ 新目标" />
+      <div className="mt-7 space-y-5">
+        {DELIVERY_GOALS.map((goal) => {
+          const color = goal.tone === "lime"
+            ? "var(--chart-lime)"
+            : goal.tone === "yellow"
+            ? "var(--chart-yellow)"
+            : "var(--chart-orange)";
+          return (
+            <div key={goal.label}>
+              <div className="mb-2 flex items-center justify-between gap-3 text-[13px]">
+                <span className="font-medium text-[var(--ink)]">{goal.label}</span>
+                <span className="text-[var(--ink-mute)]">{goal.value}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--secondary)]">
+                <div className="h-full rounded-full" style={{ width: `${goal.progress}%`, backgroundColor: color }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <Link href="/me" className="mt-6 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--ink)] hover:underline">
+        查看我的工作台
+        <ArrowUpRight className="h-3.5 w-3.5" />
+      </Link>
+    </article>
+  );
+}
+
+function CardTitle({ title, subtitle, action }: { title: string; subtitle: string; action: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h2 className="text-[19px] font-semibold tracking-[-0.025em]">{title}</h2>
+        <p className="mt-0.5 text-[12px] text-[var(--ink-mute)]">{subtitle}</p>
+      </div>
+      <button type="button" className="rounded-lg bg-[var(--secondary)] px-2.5 py-1.5 text-[12px] font-medium hover:bg-[var(--hairline)]">
+        {action}
+      </button>
+    </div>
+  );
+}
+
+function QuickActions() {
+  const actions = [
+    { label: "新报价", icon: Receipt, href: "/orders/quotations/new" },
+    { label: "新打样", icon: Factory, href: "/orders/sample-notices/new" },
+    { label: "客户", icon: Users, href: "/customers" },
+    { label: "更多", icon: Boxes, href: "/me" },
+  ];
+
+  return (
+    <section className="rounded-2xl bg-[var(--card)] p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[20px] font-semibold tracking-[-0.03em]">今日经营卡</h2>
+          <p className="text-[12px] text-[var(--ink-mute)]">快速操作</p>
+        </div>
+        <Link href="/me" className="rounded-lg bg-[var(--secondary)] px-2.5 py-1.5 text-[12px] font-medium hover:bg-[var(--hairline)]">
+          查看全部
+        </Link>
+      </div>
+
+      <Link
+        href="/orders/quotations"
+        className="mt-5 block overflow-hidden rounded-2xl bg-[var(--chart-lime)] p-5 text-[var(--ink)] transition-transform hover:-translate-y-0.5"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-medium">待审批报价</span>
+          <FileCheck2 className="h-5 w-5" />
+        </div>
+        <strong className="mt-7 block text-[42px] font-semibold leading-none tracking-[-0.055em]">5</strong>
+        <div className="mt-6 flex items-center justify-between text-[12px]">
+          <span>合计 ¥126,800</span>
+          <span className="inline-flex items-center gap-1 font-semibold">
+            立即处理
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
+      </Link>
+
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link key={action.label} href={action.href} className="group text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--secondary)] transition-colors group-hover:bg-[var(--hairline)]">
+                <Icon className="h-5 w-5" strokeWidth={1.7} />
+              </span>
+              <span className="mt-2 block text-[11px] text-[var(--ink-dim)]">{action.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function TodoPanel() {
+  const [activeKey, setActiveKey] = useState<(typeof TODO_GROUPS)[number]["key"]>("priority");
+  const active = TODO_GROUPS.find((group) => group.key === activeKey) ?? TODO_GROUPS[0];
+
+  return (
+    <section className="overflow-hidden rounded-2xl bg-[var(--card)]">
+      <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
+        <div>
+          <h2 className="text-[20px] font-semibold tracking-[-0.03em]">今日待办</h2>
+          <p className="text-[12px] text-[var(--ink-mute)]">11 项待处理</p>
+        </div>
+        <Clock3 className="h-5 w-5 text-[var(--ink-mute)]" />
+      </div>
+
+      <div role="tablist" aria-label="待办分类" className="flex gap-1 border-b border-[var(--divider)] px-4">
+        {TODO_GROUPS.map((group) => (
+          <button
+            key={group.key}
+            type="button"
+            role="tab"
+            aria-selected={activeKey === group.key}
+            onClick={() => setActiveKey(group.key)}
+            className={cn(
+              "border-b-2 px-2 py-2.5 text-[12px] font-medium transition-colors",
+              activeKey === group.key
+                ? "border-[var(--ink)] text-[var(--ink)]"
+                : "border-transparent text-[var(--ink-mute)] hover:text-[var(--ink)]"
+            )}
+          >
+            {group.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel">
+        {active.items.map((item) => (
+          <Link
+            key={`${item.time}-${item.title}`}
+            href={item.href}
+            className="group flex items-start gap-3 border-b border-[var(--divider)] px-5 py-4 last:border-b-0 hover:bg-[var(--secondary)]"
+          >
+            <span className="w-11 shrink-0 text-[12px] font-medium text-[var(--ink-mute)]">{item.time}</span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                {"alert" in item && item.alert ? <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--chart-orange)]" /> : null}
+                <span className="truncate text-[13px] font-medium text-[var(--ink)]">{item.title}</span>
+              </span>
+              <span className="mt-1 block text-[11px] text-[var(--ink-mute)]">{item.role}</span>
+            </span>
+            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[var(--ink-mute)] group-hover:text-[var(--ink)]" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OperationSnapshot() {
+  const rows = [
+    { icon: Factory, label: "在手工艺", value: "4 单", tone: "var(--chart-lime)" },
+    { icon: CircleDollarSign, label: "报价转化", value: "64%", tone: "var(--chart-yellow)" },
+    { icon: Target, label: "逾期跟进", value: "2 个", tone: "var(--chart-orange)" },
+  ];
+
+  return (
+    <section className="rounded-2xl bg-[var(--card)] p-5">
+      <h2 className="text-[20px] font-semibold tracking-[-0.03em]">运营快照</h2>
+      <div className="mt-4 space-y-3">
+        {rows.map((row) => {
+          const Icon = row.icon;
+          return (
+            <div key={row.label} className="flex items-center gap-3 rounded-xl bg-[var(--secondary)] p-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: row.tone }}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="flex-1 text-[13px] text-[var(--ink-dim)]">{row.label}</span>
+              <strong className="text-[17px] font-semibold">{row.value}</strong>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -316,123 +578,89 @@ function AlertCard({
   severity,
   title,
   body,
+  meta,
   href,
-  cta,
 }: {
-  severity: "info" | "warn" | "danger";
+  severity: string;
   title: string;
   body: string;
+  meta: string;
   href: string;
-  cta: string;
 }) {
+  const tone = severity === "danger"
+    ? { bg: "#fff0e9", ink: "var(--destructive)", dot: "var(--destructive)" }
+    : severity === "warn"
+    ? { bg: "var(--warn-soft)", ink: "#9a6121", dot: "var(--chart-orange)" }
+    : { bg: "var(--info-soft)", ink: "var(--info)", dot: "var(--info)" };
+
   return (
     <Link
       href={href}
-      className={cn(
-        "block rounded-md border p-4 transition-colors group",
-        severity === "danger"
-          ? "border-[var(--destructive)]/40 hover:border-[var(--destructive)] bg-[oklch(0.97_0.02_25)]"
-          : severity === "warn"
-          ? "border-[var(--warn)]/40 hover:border-[var(--warn)] bg-[var(--warn-soft)]/30"
-          : "border-[var(--info)]/40 hover:border-[var(--info)] bg-[oklch(0.97_0.02_240)]"
-      )}
+      className="group rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
+      style={{ backgroundColor: tone.bg }}
     >
-      <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
-            severity === "danger"
-              ? "border-[var(--destructive)]/25 bg-[oklch(0.95_0.04_22)] text-[var(--destructive)]"
-              : severity === "warn"
-              ? "border-[var(--warn)]/30 bg-[var(--warn-soft)] text-[var(--warn)]"
-              : "border-[var(--info)]/30 bg-[var(--info-soft)] text-[var(--info)]"
-          )}
-        >
-          <AlertTriangle className="h-3.5 w-3.5" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className={cn(
-            "font-medium text-[14px] mb-1",
-            severity === "danger" ? "text-[var(--destructive)]" : "text-[var(--warn)]"
-          )}>
-            {title}
-          </p>
-          <p className="text-[14px] text-[var(--ink-dim)] leading-relaxed mb-2">{body}</p>
-          <div className="flex items-center gap-1 text-[14px] font-mono text-[var(--ink-mute)] group-hover:text-[var(--ink)]">
-            <span>{cta}</span>
-            <ArrowUpRight className="w-3 h-3" />
-          </div>
-        </div>
+      <div className="flex items-start justify-between gap-3">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tone.dot }} />
+        <ArrowUpRight className="h-4 w-4 text-[var(--ink-mute)] group-hover:text-[var(--ink)]" />
       </div>
+      <h3 className="mt-5 text-[15px] font-semibold" style={{ color: tone.ink }}>{title}</h3>
+      <p className="mt-1.5 text-[13px] leading-5 text-[var(--ink-dim)]">{body}</p>
+      <p className="mt-4 text-[11px] font-medium text-[var(--ink-mute)]">{meta}</p>
     </Link>
   );
 }
 
-function TrendBlock({
-  title,
-  sub,
-  values,
-  tone,
-  unit,
-  peak,
-}: {
-  title: string;
-  sub: string;
-  values: number[];
-  tone: "primary" | "success" | "warn";
-  unit: string;
-  peak: string;
-}) {
+function TeamPulse() {
+  const team = [
+    { name: "李白", role: "老板", activity: "审批 1 件", color: "#11150f" },
+    { name: "陈总", role: "厂长", activity: "复核毛利", color: "var(--chart-lime)" },
+    { name: "刘韬", role: "业务员", activity: "跟进 3 次", color: "var(--chart-yellow)" },
+    { name: "亚明", role: "业务员", activity: "报价 2 单", color: "var(--chart-orange)" },
+  ];
+
   return (
-    <div className="border border-[var(--hairline)] rounded-md p-4 bg-[var(--card)]">
-      <div className="flex items-baseline justify-between mb-2">
-        <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-          {title}
-        </p>
-        <p className="text-[14px] font-mono text-[var(--ink-mute)]">
-          顶 {peak}
-        </p>
+    <section>
+      <SectionHeading title="团队动态" subtitle="今天" icon={<Users className="h-4 w-4" />} />
+      <div className="grid overflow-hidden rounded-2xl bg-[var(--card)] sm:grid-cols-2 xl:grid-cols-4">
+        {team.map((person) => (
+          <div key={person.name} className="flex items-center gap-3 border-b border-r border-[var(--divider)] p-4 last:border-r-0 xl:border-b-0">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-semibold"
+              style={{
+                backgroundColor: person.color,
+                color: person.color === "#11150f" ? "#ffffff" : "#11150f",
+              }}
+            >
+              {person.name.slice(0, 1)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-semibold">{person.name}</p>
+              <p className="text-[11px] text-[var(--ink-mute)]">{person.role}</p>
+            </div>
+            <span className="text-[11px] text-[var(--ink-dim)]">{person.activity}</span>
+          </div>
+        ))}
       </div>
-      <div className="flex items-baseline gap-1.5 mb-3">
-        <span className="font-display text-[32px] font-medium tnum text-[var(--ink)]">
-          {sub.split(" ")[0]}
-        </span>
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">
-          {sub.split(" ")[1] ?? unit}
-        </span>
-      </div>
-      <div className="h-12">
-        <MiniSparkline values={values} tone={tone} height={48} />
-      </div>
-      <div className="flex justify-between mt-2">
-        <span className="font-mono text-[14px] text-[var(--ink-mute)]">{values.length} 天前</span>
-        <span className="font-mono text-[14px] text-[var(--ink)] font-medium">今天</span>
-      </div>
-    </div>
+    </section>
   );
 }
 
-function PersonStat({
-  role,
-  name,
-  today,
+function SectionHeading({
+  title,
+  subtitle,
+  icon,
 }: {
-  role: Role;
-  name: string;
-  today: string;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
 }) {
   return (
-    <div className="border border-[var(--hairline)] rounded-md p-3 bg-[var(--card)]">
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)]">
-          {getRoleLabel(role)}
-        </span>
-        <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
+    <div className="mb-3 mt-2 flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-[var(--ink)]">{icon}</span>
+        <h2 className="text-[18px] font-semibold tracking-[-0.025em]">{title}</h2>
       </div>
-      <p className="text-[14px] font-medium text-[var(--ink)]">{name}</p>
-      <p className="font-mono text-[14px] text-[var(--ink-mute)] mt-1.5 leading-relaxed">
-        {today}
-      </p>
+      <span className="text-[12px] text-[var(--ink-mute)]">{subtitle}</span>
     </div>
   );
 }

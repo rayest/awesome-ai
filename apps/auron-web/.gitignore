@@ -22,3 +22,4 @@ pnpm-lock.yaml
 .pnp.js
 .pnp.mjs
 tsconfig.tsbuildinfo
+.codex-audit-ui/

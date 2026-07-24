@@ -194,7 +194,7 @@ function ContactActions({ contact }: { contact: Contact }) {
             </div>
           </button>
         )}
-        <Link href={`/crm/followups/new?contact=${contact.id}&customer=${contact.customerId}`} className="flex items-center gap-3 border border-[var(--primary)] rounded-md p-3 hover:bg-[var(--accent)]/30 transition-colors">
+        <Link href={`/crm/followups/new?contact=${contact.id}&customer=${contact.customerId}`} className="flex items-center gap-3 rounded-md bg-[var(--accent)]/45 p-3 transition-colors hover:bg-[var(--accent)]">
           <span className="w-8 h-8 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[14px]">+</span>
           <div>
             <p className="text-[14px] font-medium text-[var(--ink)]">新建跟进</p>

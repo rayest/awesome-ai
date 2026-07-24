@@ -33,28 +33,28 @@ export function KpiCard({
   const CardInner = (
     <div
       className={cn(
-        "group relative rounded-md border bg-[var(--card)] p-4 transition-colors",
+        "group relative h-full rounded-2xl bg-[var(--card)] p-4 transition-all sm:p-5",
         alert
-          ? "border-[var(--destructive)]/60 hover:border-[var(--destructive)]"
-          : "border-[var(--hairline)] hover:border-[var(--primary)]/60",
+          ? "bg-[var(--warn-soft)] hover:-translate-y-0.5"
+          : "hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(20,24,18,0.08)]",
         href && "cursor-pointer"
       )}
     >
       {/* label */}
-      <p className="font-mono text-[14px] uppercase tracking-[0.18em] text-[var(--ink-mute)] flex items-center justify-between">
+      <p className="flex items-center justify-between gap-2 text-[13px] font-medium text-[var(--ink-mute)]">
         <span>{label}</span>
         {alert && (
-          <AlertTriangle className="h-3.5 w-3.5 text-[var(--destructive)]" />
+          <AlertTriangle className="h-4 w-4 text-[var(--chart-orange)]" />
         )}
       </p>
 
       {/* value */}
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="font-display text-[32px] font-medium tracking-tight tnum text-[var(--ink)]">
+        <span className="tnum whitespace-nowrap font-display text-[34px] font-semibold tracking-[-0.05em] text-[var(--ink)] sm:text-[38px]">
           {value}
         </span>
         {unit && (
-          <span className="font-mono text-[14px] text-[var(--ink-mute)] ml-1">
+          <span className="ml-1 text-[13px] text-[var(--ink-mute)]">
             {unit}
           </span>
         )}
@@ -62,15 +62,15 @@ export function KpiCard({
 
       {/* delta + spark */}
       {(delta || spark) && (
-        <div className="mt-2 flex items-end justify-between gap-2">
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
           {delta && (
-            <div className="flex items-center gap-1 text-[14px] font-mono">
+            <div className="flex min-w-0 items-center gap-1 text-[12px]">
               <span
                 className={cn(
                   "px-1 py-0.5 rounded tnum font-medium",
                   delta.positive
                     ? "bg-[var(--success-soft)] text-[var(--success)]"
-                    : "bg-[oklch(0.95_0.04_22)] text-[var(--destructive)]",
+                    : "bg-[var(--warn-soft)] text-[var(--warn)]",
                   delta.value === 0 && "bg-[var(--secondary)] text-[var(--ink-mute)]"
                 )}
               >
@@ -81,8 +81,8 @@ export function KpiCard({
             </div>
           )}
           {spark && spark.length > 1 && (
-            <div className="h-8 w-24 -mb-1 opacity-80 group-hover:opacity-100 transition-opacity">
-              <Sparkline values={spark} tone={sparkTone} />
+            <div className="-mb-1 hidden h-8 w-24 opacity-80 transition-opacity group-hover:opacity-100 sm:block">
+              <Sparkline values={spark} tone={sparkTone} smooth />
             </div>
           )}
         </div>
@@ -92,7 +92,10 @@ export function KpiCard({
 
   if (href) {
     return (
-      <Link href={href} className="block">
+      <Link
+        href={href}
+        className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+      >
         {CardInner}
       </Link>
     );

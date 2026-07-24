@@ -184,7 +184,7 @@ function Actions({ f }: { f: Followup }) {
             <p className="font-mono text-[14px] text-[var(--ink-mute)]">下次：{f.nextContactAt}</p>
           </div>
         </button>
-        <Link href={`/crm/followups?customer=${f.customerId}`} className="flex items-center gap-3 border border-[var(--primary)] rounded-md p-3 hover:bg-[var(--accent)]/30 transition-colors">
+        <Link href={`/crm/followups?customer=${f.customerId}`} className="flex items-center gap-3 rounded-md bg-[var(--accent)]/45 p-3 transition-colors hover:bg-[var(--accent)]">
           <span className="w-8 h-8 rounded-full bg-[var(--ink)] text-[var(--background)] flex items-center justify-center">
             <ArrowUpRight className="w-4 h-4" />
           </span>

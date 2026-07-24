@@ -180,12 +180,12 @@ function Actions({ id }: { id: string }) {
       <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">快捷操作</p>
       <div className="space-y-2">
         <Link href={`/orders/sample-workorders/new?machine=${id}`} className="block">
-          <div className="border border-[var(--primary)] rounded-md p-3 hover:bg-[var(--accent)]/30 transition-colors">
+          <div className="rounded-md bg-[var(--accent)]/45 p-3 transition-colors hover:bg-[var(--accent)]">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 用此机型起工艺</p>
             <p className="text-[14px] font-mono text-[var(--ink-mute)] mt-0.5">工艺表.机型ID 自动 link</p>
           </div>
         </Link>
-        <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
+        <button className="w-full rounded-md bg-[var(--secondary)] p-3 hover:bg-[var(--accent)]/50 transition-colors text-left">
           <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
             <Pencil className="h-3.5 w-3.5" />
             编辑机型

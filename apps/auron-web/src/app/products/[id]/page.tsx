@@ -198,18 +198,18 @@ function Actions({ styleNo }: { styleNo: string }) {
       <p className="font-display text-[18px] font-medium mb-3 border-b border-[var(--hairline)] pb-2">快捷操作</p>
       <div className="space-y-2">
         <Link href={`/orders/quotations/new?product=${styleNo}`} className="block">
-          <div className="border border-[var(--primary)] rounded-md p-3 hover:bg-[var(--accent)]/30 transition-colors">
+          <div className="rounded-md bg-[var(--accent)]/45 p-3 transition-colors hover:bg-[var(--accent)]">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 发起报价</p>
             <p className="text-[13px] text-[var(--ink-mute)] mt-0.5">直接基于这款产品出价</p>
           </div>
         </Link>
         <Link href={`/orders/sample-workorders/new?product=${styleNo}`} className="block">
-          <div className="border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors">
+          <div className="rounded-md bg-[var(--secondary)] p-3 hover:bg-[var(--accent)]/50 transition-colors">
             <p className="text-[14px] font-medium text-[var(--ink)]">+ 转工艺单</p>
             <p className="text-[13px] text-[var(--ink-mute)] mt-0.5">创建对应工艺配方</p>
           </div>
         </Link>
-        <button className="w-full border border-[var(--hairline)] rounded-md p-3 hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-colors text-left">
+        <button className="w-full rounded-md bg-[var(--secondary)] p-3 hover:bg-[var(--accent)]/50 transition-colors text-left">
           <p className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--ink)]">
             <Pencil className="h-3.5 w-3.5" />
             编辑产品

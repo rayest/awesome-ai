@@ -269,7 +269,7 @@ export default function NewSampleNoticePage() {
               <div className="mb-3 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[var(--ink-dim)]" /><h2 className="text-[14px] font-semibold">完成情况</h2></div>
               <CompletionList items={readiness} />
             </section>
-            <section className="rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/[0.035] p-4 text-[12px] leading-5 text-[var(--ink-dim)]">
+            <section className="rounded-lg bg-[var(--accent)]/45 p-4 text-[12px] leading-5 text-[var(--ink-dim)]">
               创建后进入“等待下发”。确认资料无误后，再由业务负责人下发给前道师傅并创建工艺单。
             </section>
           </aside>
